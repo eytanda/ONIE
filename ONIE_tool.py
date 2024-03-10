@@ -1,13 +1,11 @@
 #!/usr/bin/python3.6
 """
-author: Omer Dagry
-mail: omerdagry@gmail.com
+author: Eytan Dagry
+mail: eytan@silicom.co.il
 Update by: Eytan Dagry
 
 
-!! update the var SCRIPT_VERSION if you change the version !!
-release date: 14.8.2022
-update date 21.02.2024   - full generic FRU
+
 update date 22.02.2024    - ONIE_tool
 """
 
@@ -31,7 +29,7 @@ import re
 #from paramiko import AuthenticationException
 
 # Constants
-SCRIPT_VERSION = 4.6
+SCRIPT_VERSION = 4.7
 
 
 def check_py_ver():
@@ -373,12 +371,12 @@ def get_smbus_device_id(num_of_required_I2C_devices):
                         return address
                         #break
                     else:
-                        print("Error: Invalid I2C address. Please enter a value between 0 and 0x7F.")
+                        print(RED_COLOR + "Error: Invalid I2C address. Please enter a value between 0 and 0x7F." + RESET_STYLE)
                 else:
-                    print("Error: Please enter a valid I2C address.")
+                    print(RED_COLOR + "Error: Please enter a valid I2C address." + RESET_STYLE)
 
             except ValueError:
-                print("Error: Please enter a valid integer or hexadecimal value (e.g., 0x20).")
+                print(RED_COLOR + "Error: Please enter a valid integer or hexadecimal value (e.g., 0x20)." + RESET_STYLE)
 
 
 
@@ -393,12 +391,12 @@ def get_smbus_device_id(num_of_required_I2C_devices):
                         addresses.append(address)
                         break
                     else:
-                        print("Error: Invalid I2C address. Please enter a value between 0 and 0x7F.")
+                        print(RED_COLOR + f"Error: Invalid I2C address. Please enter a value between 0 and 0x7F." + RESET_STYLE)
                 else:
-                    print("Error: Please enter a valid I2C address.")
+                    print(RED_COLOR + f"Error: Please enter a valid I2C address." + RESET_STYLE)
 
             except ValueError:
-                print("Error: Please enter a valid integer or hexadecimal value (e.g., 0x20).")
+                print(RED_COLOR + f"Error: Please enter a valid integer or hexadecimal value (e.g., 0x20)." + RESET_STYLE)
 
     if num_of_required_I2C_devices == 2:
         # Prompt for the second I2C device address (optional)
@@ -411,12 +409,12 @@ def get_smbus_device_id(num_of_required_I2C_devices):
                         addresses.append(address)
                         break
                     else:
-                        print("Error: Invalid I2C address. Please enter a value between 0 and 0x7F.")
+                        print(RED_COLOR + f"Error: Invalid I2C address. Please enter a value between 0 and 0x7F." + RESET_STYLE)
                 else:
-                    print("Error: Please enter a valid I2C address.")
+                    print(RED_COLOR + f"Error: Please enter a valid I2C address." + RESET_STYLE)
 
             except ValueError:
-                print("Error: Please enter a valid integer or hexadecimal value (e.g., 0x20).")
+                print(RED_COLOR + "Error: Please enter a valid integer or hexadecimal value (e.g., 0x20)." + RESET_STYLE)
     else:
         addresses.append(None)
 
@@ -459,7 +457,7 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
         smbus_device_id1 , smbus_device_id2 = get_smbus_device_id(1)
     if file_name == "take system time":
         file_name = "fru_" + datetime.datetime.now().strftime("%m.%d.%Y__%H_%M_%S")
-        print("ddd file_name=", file_name)
+        #print("ddd file_name=", file_name)
     # open smbus to the i2c_bus_number
 
     # read all the data in the fru
@@ -471,9 +469,14 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
         if count_to_go_row_down == 0 and verbose:
             count_to_go_row_down = 64
             print()
-        # byte = bus.read_byte_data(0x54, i)
         bus = SMBus(i2c_bus_number)
-        byte = bus.read_byte_data(smbus_device_id1, i)
+        try:
+            byte = bus.read_byte_data(smbus_device_id1, i)
+        except IOError as e:
+            print(RED_COLOR + f"Failed to read from BUS {i2c_bus_number},  I2C device {smbus_device_id1}." + RESET_STYLE)
+            sys.exit(1)
+
+
         if verbose:
             print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
         fru_data.append(byte)
@@ -482,11 +485,23 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
         print()
     # close the smbus
     #bus.close()
+
+    ####### Check if the first 8 bytes include the correct info , if not stop the process
+    id_string = fru_data[ :8]
+    is_id_string_ok = id_string == HEADER_STRING
+    if is_id_string_ok:
+        if verbose:
+            print(RED_COLOR + "FRU Data Isn't Valid - ID String - Not Ok" + RESET_STYLE_BLACK_BG)
+            sys.exit(1)
+    else:
+        print(RED_COLOR + "FRU Data Isn't Valid - ID String - Not Ok" + RESET_STYLE_BLACK_BG)
+        sys.exit(1)
+
     # check if the len of fru_data is 10 or more
     # because if it is not it means the len of the entire fru data is missing and the data isn't valid
     if not len(fru_data) >= 10:
         print(RED_COLOR + "FRU Data Isn't Valid" + RESET_STYLE_BLACK_BG)
-        time.sleep(3)
+        time.sleep(13)
         loop_main()
         print(RESET_STYLE)
         exit()
@@ -501,31 +516,33 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
     # convert data len to decimal
 
     data_len = (int(data_len_hex_lsb, 16) & 0xFF) + ((int(data_len_hex_msb, 16) & 0xFF) << 8)
-    print("data_len=", data_len)
+    #print("data_len=", data_len)
     if (data_len + 11) < 256:
         # check if fru_data really contains data_len + 11
         if not len(fru_data) >= data_len + 11:
             print(RED_COLOR + "FRU Data Isn't Valid" + RESET_STYLE_BLACK_BG)
-            time.sleep(3)
+            time.sleep(13)
             loop_main()
             print(RESET_STYLE)
             exit()
     else:
         ### FRU > 256 , ask for additional I2C device
         smbus_device_id2 = get_smbus_device_id(3)
-        print("smbus_device_id2=" , smbus_device_id2)
-        print("data_len=", data_len)
+        #print("smbus_device_id2=" , smbus_device_id2)
+        #print("data_len=", data_len)
         x = data_len + 11 - 256
-        print("data_len + 11 - 256=",  (x))
+        #print("data_len + 11 - 256=",  (x))
         for i in range(0, (x)):
             #print("i=", i)
 
             if count_to_go_row_down == 0 and verbose:
                 count_to_go_row_down = 64
                 print()
-            # byte = bus.read_byte_data(0x54, i)
-            #bus = SMBus(i2c_bus_number)
-            byte = bus.read_byte_data(smbus_device_id2, i)
+            try:
+                byte = bus.read_byte_data(smbus_device_id2, i)
+            except IOError as e:
+                print(RED_COLOR + f"Failed to read from BUS {i2c_bus_number},  I2C device {smbus_device_id2}." + RESET_STYLE)
+                sys.exit(1)
             if verbose:
                 print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
             fru_data.append(byte)
@@ -581,7 +598,7 @@ def print_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_fru=Tru
     path = os.getcwd()
     path = path + sub_dir
     file_name = path + file_name
-    print("  file_name=", file_name)  #?
+    #print("  file_name=", file_name)  #?
     if file_name.endswith(".bin"):
         file_name = file_name[:-4]
     if read_from_fru:
@@ -665,8 +682,8 @@ def print_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_fru=Tru
         code = data[index:index + 1].hex()
         index += 1
         if code not in ALLOWED_CODES or code not in CODES_MEANING:
-            print("Unknown Code '%s'." % code)
-            time.sleep(3)
+            print(RED_COLOR + f"Unknown Code '%s'." % code + RESET_STYLE )
+            time.sleep(6)
             loop_main()
             print(RESET_STYLE)
             exit()
@@ -790,7 +807,7 @@ def print_fru_file_in_hex(file_name="onie_eeprom", read_from_fru=True):
         file_name = file_name[:-4]
     if read_from_fru:
         output_file_name = output_fru_data_to_bin_file( verbose=False)
-        print("output_file_name=", output_file_name)
+        #print("output_file_name=", output_file_name)
         output_file_name = output_file_name[:-4]
     else:
         if os.path.isfile(file_name + ".bin"):
@@ -848,20 +865,20 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
     :param fru_data: the data to write to the FRU
     :type fru_data: list (of int)
     """
-    print(YELLOW_COLOR + "9999 file_name=", file_name)
-    print(RED_COLOR + f"fru_data=", fru_data)
+    #print(YELLOW_COLOR + "9999 file_name=", file_name)
+    #print(RED_COLOR + f"fru_data=", fru_data)
     global smbus_device_id1
     global smbus_device_id2
     global i2c_bus_number
     get_i2c_bus_number_and_enable_access()
-    print("len(fru_data)=", len(fru_data))
+    #print("len(fru_data)=", len(fru_data))
     if len(fru_data) <= 256:
         mem_size_required = 256
         smbus_device_id1, smbus_device_id2 = get_smbus_device_id(1)
     else:
         mem_size_required = 512
         smbus_device_id1 , smbus_device_id2= get_smbus_device_id(2)
-    print("smbus_device_id1 , smbus_device_id2 =" , smbus_device_id1 , smbus_device_id2)
+    #print("smbus_device_id1 , smbus_device_id2 =" , smbus_device_id1 , smbus_device_id2)
     # open smbus to the i2c_bus_number
     bus = SMBus(i2c_bus_number)
     print(GREEN_COLOR + "Starting To Write To HOST FRU" + RESET_STYLE_BLACK_BG + "\n")
@@ -889,16 +906,27 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
                     exit()
                 try:
                     if i < 256:
-                        print(i2c_bus_number,  i , fru_data[i])
+                        #print(i2c_bus_number,  i , fru_data[i])
                     #print(smbus_device_id , i)
-                        bus.write_byte_data(smbus_device_id1, i, fru_data[i])
+
+                        try:
+                            bus.write_byte_data(smbus_device_id1, i, fru_data[i])
+                        except IOError as e:
+                            print(RED_COLOR + f"Failed to write to BUS {i2c_bus_number}, I2C device {smbus_device_id1}." + RESET_STYLE)
+                            sys.exit(1)
+
                         #time.sleep(1)
                         #print(bus.read_byte_data((smbus_device_id1, i)))
                         print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
 
                     else:
-                        print(i2c_bus_number, i, fru_data[i])
-                        bus.write_byte_data(smbus_device_id2, i, fru_data[i])
+                        #print(i2c_bus_number, i, fru_data[i])
+                        try:
+                            bus.write_byte_data(smbus_device_id2, i, fru_data[i])
+                        except IOError as e:
+                            print(RED_COLOR + f"Failed to write to BUS {i2c_bus_number}, I2C device {smbus_device_id2}." + RESET_STYLE)
+                            sys.exit(1)
+
                         #time.sleep(3)
                         #print(bus.read_byte_data((smbus_device_id2, i)))
                         print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
@@ -962,7 +990,7 @@ def write_to_host_and_bmc_fru(file_name="onie_eeprom", config_file="333"):
     :param file_name: the name of the file that has the FRU data, only the file name, no need for extention
     :type file_name: str
     """
-    print("00 file_name=",file_name)
+    #print("00 file_name=",file_name)
     if file_name.endswith(".bin"):
         file_name = file_name[:-4]
     # set_host_ip_and_ping_bmc()
@@ -972,7 +1000,7 @@ def write_to_host_and_bmc_fru(file_name="onie_eeprom", config_file="333"):
     try:
         with open(file_name + ".bin", "rb") as file:
             fru_data = file.read()
-            print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%")   #@
+            #print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%")   #@
             #print("fru_data=",  fru_data)  #@
     except OSError as err:
         print(RED_COLOR + traceback.format_exc() + RESET_STYLE_BLACK_BG)
@@ -982,8 +1010,8 @@ def write_to_host_and_bmc_fru(file_name="onie_eeprom", config_file="333"):
         print(RESET_STYLE)
         exit()
     # HOST
-    print("file_name=", file_name)
-    print("fru_data", fru_data)
+    #print("file_name=", file_name)
+    #print("fru_data", fru_data)
     write_to_host_fru(file_name = file_name ,fru_data=fru_data, config_file=config_file)
 
 
@@ -1108,7 +1136,7 @@ def read_config_file(config_file, burn=False):
     fru_data_list.append(header_version)  # index 1
     # the 2 bytes of the data len (zero for now)
     fru_data_list.append(b"\x00\x00")  # index 2
-    print("fru_data_list=", fru_data_list)
+    #print("fru_data_list=", fru_data_list)
     # print("fru_data_list === ",  fru_data_list)
     # print(result_dict)
     for key in result_dict:
@@ -1260,7 +1288,7 @@ def read_config_file(config_file, burn=False):
     checksum = binascii.crc32(data)
     checksum = checksum.to_bytes(4, "big")
     data += checksum
-    print("data=" , data)
+    #print("data=" , data)
     # write data to file with the checksum
     with open(file_path  , "wb") as file:
         file.write(data)
@@ -1302,7 +1330,7 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
     """
     #result_dict = create_dic(config_file)
     # result_dict, fd_keys, fd_values = create_dic()
-    print("10 file_name= ", file_name)
+    #print("10 file_name= ", file_name)
     checksum_in_fru = None
     checksum_should_be = 0
     codes = []
@@ -1322,7 +1350,7 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
             exit()
     # open the file with the fru data
     current_directory = os.getcwd()
-    print(f"11 {output_file_name}.bin")
+    #print(f"11 {output_file_name}.bin")
     with open(f"{output_file_name}.bin", "rb") as file:
         data = file.read()
     if not len(data) >= 11:
@@ -1389,8 +1417,8 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
         code = data[index:index + 1].hex()
         index += 1
         if code not in ALLOWED_CODES or code not in CODES_MEANING:
-            print("Unknown Code '%s'." % code)
-            time.sleep(3)
+            print(RED_COLOR + f"Unknown Code '%s'." % code  + RESET_STYLE)
+            time.sleep(6)
             loop_main()
             print(RESET_STYLE)
             exit()
@@ -1490,12 +1518,11 @@ def ask_what_to_do_and_call_the_right_func():
 
     what_to_do = input("1. Create a Bin File Based On fru_config.txt File data\n"
                        "2. Program Fru Based On fru_config.txt File data\n"
-                       "3. ddddddddddd\n"
-                       "4. Show Data Stored In Fru Backup File (Withot Having a Config File)\n"
-                       "5. Program Bin File To Host Fru\n"
-                       "6. Print Fru Data In Hex\n"
-                       "7. Print Fru Backup File In Hex\n"
-                       "8. Create Fru Bin File (From fru)\n\n"
+                       "3. Show Data Stored In Fru Backup File (Withot Having a Config File)\n"
+                       "4. Program Bin File To Host Fru\n"
+                       "5. Print Fru Data In Hex\n"
+                       "6. Print Fru Backup File In Hex\n"
+                       "7. Create Fru Bin File (From fru)\n\n"
 
 
                        "Mode = ")
@@ -1509,18 +1536,24 @@ def ask_what_to_do_and_call_the_right_func():
         print(RED_COLOR + "Unknown Mode '%s'." % what_to_do + RESET_STYLE_BLACK_BG + "\n\n")
     # call the function that does what the user wants
 
-    if what_to_do == "8":  # create a file of the fru
+    if what_to_do == "7":  # create a file of the fru
         output_file_name = output_fru_data_to_bin_file(file_name="take system time")
-        print("99 outputfile=", output_file_name)
+        #print("99 outputfile=", output_file_name)
         print(GREEN_COLOR + "FRU Data Has Been Dumped To '%s'" % output_file_name, RESET_STYLE_BLACK_BG)
         print_config_fru_file_data(verbose=True, file_name=output_file_name, read_from_fru=False, config_file='ccc')
         return True
-    elif what_to_do == "4":  # print fru data of desired file
+    elif what_to_do == "3":  # print fru data of desired file
         # file_name = print_list_of_bin_files_and_ask_user_to_chose()
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
-        print_fru_file_data(file_name=file_name, read_from_fru=False)
+        #print_fru_file_data(file_name=file_name, read_from_fru=False)
+        sub_dir = "/FRU_Backup_files/"
+        path = os.getcwd()
+        path = path + sub_dir
+        file_name = path + file_name
+        #print("file_name= ", file_name )
+        print_config_fru_file_data( file_name=file_name, read_from_fru=False)
         return True
-    elif what_to_do == "5":  # program desired file to host fru
+    elif what_to_do == "4":  # program desired file to host fru
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
         # file_name = print_list_of_bin_files_and_ask_user_to_chose()
         sub_dir = "/FRU_Backup_files/"
@@ -1532,10 +1565,10 @@ def ask_what_to_do_and_call_the_right_func():
             fru_data = file.read()
         write_to_host_fru(fru_data=fru_data)
         return True
-    elif what_to_do == "6":
+    elif what_to_do == "5":
         print_fru_file_in_hex()
         return True
-    elif what_to_do == "7":
+    elif what_to_do == "6":
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
         # file_name = print_list_of_bin_files_and_ask_user_to_chose()
         print_fru_file_in_hex(read_from_fru=False, file_name=file_name)
@@ -1550,9 +1583,9 @@ def ask_what_to_do_and_call_the_right_func():
     #     print_config_fru_file_data(config_file=file_name)
     #     return True
     elif what_to_do == "1":
-        print(RED_COLOR + "44=")
+        #print(RED_COLOR + "44=")
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
-        print(GREEN_COLOR + f"44=", file_name)
+        #print(GREEN_COLOR + f"44=", file_name)
         read_config_file(file_name, False)
         return True
 
