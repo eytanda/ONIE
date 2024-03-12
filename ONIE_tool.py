@@ -24,7 +24,7 @@ import re
 
 
 # Constants
-SCRIPT_VERSION = 4.8
+SCRIPT_VERSION = 5.0
 
 
 def check_py_ver():
@@ -70,7 +70,6 @@ def check_if_ubuntu():
     if match:
         operating_system_line = match.group(1)
         os = operating_system_line.split()[0]
-        #print("os=", os)
         if os == 'Ubuntu' or os == 'Debian':
             os_command = 'apt'
             return True   # os is Ubunto  or Debian
@@ -129,7 +128,7 @@ NUMBER_OF_MACS = b"\x00\x09"
 ALLOWED_CODES = ["21", "22", "23", "24", "25", "26", "27", "28", "29",
                  "2a", "2b", "2c", "2d", "2e", "2f", "51", "52", "53",
                  "54", "55", "56", "57", "58", "59", "5A", "5B", "5C",
-                 "5D", "5E", "5F", "fd",  "81", "82", "83", "84", "85", "fe"]
+                 "5D", "5E", "5F", "fd",  "81", "82", "83", "84", "85", "86", "87", "fe"]
 NOT_ALLOWED_CODES = ["00", "ff"]
 CODES_MEANING = {"21": "Product Name: ",
                  "22": "Part Number: ",
@@ -164,9 +163,12 @@ CODES_MEANING = {"21": "Product Name: ",
                  "60": "chassis version",
                  "fd": "Vendor Extension: ",
                  "81": "silicom_onie_version",
-                 "82": "UUID",
-                 "83": "TNB",
-                 "84": "IMEI1",
+                 "82": "TNB1",
+                 "83": "IMEI1",
+                 "84": "IMEI2",
+                 "85": "TNB1",
+                 "86": "TNB2",
+                 "87": "TNB3",
                  "fe": "CRC-32 (checksum): "}
 ALLOWED_CHARS = [chr(num) for num in range(65, 91)]  # A - Z
 ALLOWED_CHARS += [chr(num) for num in range(97, 123)]  # a - z
@@ -319,7 +321,6 @@ def get_i2c_bus_number_and_enable_access():
         print(RED_COLOR + "Couldn't Find Active I2C Bus" + RESET_STYLE)
         exit()
     else:
-        #print(i2c_addresses)
         print("There Is More Then 1 Active I2C Bus.\n"
               "Please Chose The Desired Address.\n"
               "Available Addresses:\n"
@@ -430,7 +431,7 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
     global smbus_device_id2
     if i2c_check:
         get_i2c_bus_number_and_enable_access()
-        smbus_device_id1 , smbus_device_id2 = get_smbus_device_id(1)
+        smbus_device_id1, smbus_device_id2 = get_smbus_device_id(1)
     if file_name == "take system time":
         file_name = "fru_" + datetime.datetime.now().strftime("%m.%d.%Y__%H_%M_%S")
 
@@ -458,13 +459,14 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
     if verbose:
         print()
 
-    # ###### Check if the first 8 bytes include the correct info , if not stop the process
-    id_string = fru_data[:8]
-    is_id_string_ok = id_string == HEADER_STRING
+    id_bytes = bytes(fru_data[:8])
+    # Convert bytes to a string
+    # id_string = id_bytes.decode('utf-8')
+    is_id_string_ok = id_bytes == HEADER_STRING
     if is_id_string_ok:
         if verbose:
-            print(RED_COLOR + "FRU Data Isn't Valid - ID String - Not Ok" + RESET_STYLE_BLACK_BG)
-            sys.exit(1)
+            print(GREEN_COLOR + "FRU Data Is Valid - ID String - Ok" + RESET_STYLE_BLACK_BG)
+
     else:
         print(RED_COLOR + "FRU Data Isn't Valid - ID String - Not Ok" + RESET_STYLE_BLACK_BG)
         sys.exit(1)
@@ -539,214 +541,6 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
     return output_file_name
 
 
-def print_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_fru=True):
-    """
-    prints the fru data from the file_name.bin file
-    :param verbose: print everything or just return the codes and codes_data from the file
-    :param file_name: the name of the file to read the data from (and possibly out put the fru data to)
-    :param read_from_fru: output data from fru or read directly from a file
-    :type verbose: bool
-    :type file_name: str
-    :type read_from_fru: bool
-    :return: a tuple of 2 lists, the first list contains all the fields codes, the second list contains all the fields
-             data (in the same order as the first list)
-    :rtype: tuple (of 2 lists that contain str)
-    """
-    checksum_in_fru = None
-    checksum_should_be = 0
-    codes = []
-    codes_data = []
-    sub_dir = "/FRU_Backup_files/"
-    # print(file_name)
-    path = os.getcwd()
-    path = path + sub_dir
-    file_name = path + file_name
-    if file_name.endswith(".bin"):
-        file_name = file_name[:-4]
-    if read_from_fru:
-        output_file_name = output_fru_data_to_bin_file(file_name=file_name, verbose=verbose)
-    else:
-        if os.path.isfile(file_name + ".bin"):
-            output_file_name = file_name
-            print(output_file_name)   #?
-        else:
-            print(RED_COLOR + "ERROR File Doesn't Exist" + RESET_STYLE_BLACK_BG)
-            time.sleep(3)
-            loop_main()
-            print(RESET_STYLE)
-            exit()
-    # open the file with the fru data
-    with open(output_file_name + ".bin", "rb") as file:
-        data = file.read()
-    if not len(data) >= 11:
-        print(RED_COLOR + "FRU File Isn't Valid." + RESET_STYLE_BLACK_BG)
-        time.sleep(3)
-        loop_main()
-        print(RESET_STYLE)
-        exit()
-    # get ID String and check
-    index = 0
-    id_string = data[index:index + 8]
-    index += 8
-    is_id_string_ok = id_string == HEADER_STRING
-    if is_id_string_ok:
-        if verbose:
-            print(GREEN_COLOR + "ID String - OK" + RESET_STYLE_BLACK_BG)
-    else:
-        print(RED_COLOR + "ID String - Not Ok" + RESET_STYLE_BLACK_BG)
-        time.sleep(3)
-        loop_main()
-        print(RESET_STYLE)
-        exit()
-    # get Header Version and check
-    header_version = data[index:index + 1]
-    index += 1
-    is_header_version_ok = header_version == HEADER_VERSION
-    if is_header_version_ok:
-        if verbose:
-            print(GREEN_COLOR + "Header Version - OK" + RESET_STYLE_BLACK_BG)
-    else:
-        print(RED_COLOR + "Header Version - Not Ok" + RESET_STYLE_BLACK_BG)
-        time.sleep(3)
-        loop_main()
-        print(RESET_STYLE)
-        exit()
-    data_len = 0
-    # get data len in hex from the data that we read
-    data_len_hex_msb = str(hex(data[index]))[2:]  # get the hex number
-    index += 1
-    data_len_hex_lsb = str(hex(data[index]))[2:]  # get the hex number
-    index += 1
-    # if the hex number is 0x9 for example it will become 9
-    if len(data_len_hex_lsb) == 1:
-        data_len_hex_lsb = "0" + data_len_hex_lsb
-    if len(data_len_hex_msb) == 1:
-        data_len_hex_msb = "0" + data_len_hex_msb
-    # convert data len to decimal
-
-    data_len = ((int(data_len_hex_lsb, 16) & 0xFF) + ((int(data_len_hex_msb, 16) & 0xFF) << 8))
-
-    if len(data) > data_len + 11:
-        checksum_should_be = binascii.crc32(data[:data_len + 11 - 4])
-    elif len(data) == data_len + 11:
-        checksum_should_be = binascii.crc32(data[:-4])
-    else:
-        print(RED_COLOR + "Erorr Getting File Checksum." + RESET_STYLE_BLACK_BG)
-        time.sleep(3)
-        loop_main()
-        print(RESET_STYLE)
-        exit()
-    if verbose:
-        print("-" * 64)
-        print(" " * 3 + "Code Meaning" + " " * 6 + "|     " + "Code" + "     |" + " " * 9 + "Data" + " " * 13 + "|")
-        print()
-    while index - 8 - 1 - 2 < data_len:
-        code = data[index:index + 1].hex()
-        index += 1
-        if code not in ALLOWED_CODES or code not in CODES_MEANING:
-            print(RED_COLOR + f"Unknown Code '%s'." % code + RESET_STYLE )
-            time.sleep(6)
-            loop_main()
-            print(RESET_STYLE)
-            exit()
-        code_meaning = CODES_MEANING[code]
-        if verbose:
-            if code == "fd":  # if code == "fd" add row space
-                print()
-            print(code_meaning, end="")
-            print(" " * (21 - len(code_meaning)), end="|      ")
-            print(code, end="")
-            print(" " * 6, end="|    ")
-            if code == "fd":  # if code == "fd" skip data in this row as the data will be printed in multiple rows
-                print(" " * 22 + "|\n")
-        else:
-            codes.append(code)
-        if code in ALLOWED_CODES:
-            pass
-        elif code in NOT_ALLOWED_CODES:
-            print(RED_COLOR + "EEPROM data isn't valid" + RESET_STYLE_BLACK_BG)
-            time.sleep(3)
-            loop_main()
-            print(RESET_STYLE)
-            exit()
-        else:
-            print(RED_COLOR + "Unrecognized code at position %d, code =" % (index - 1), code, RESET_STYLE_BLACK_BG)
-            time.sleep(3)
-            loop_main()
-            print(RESET_STYLE)
-            exit()
-        ok = False
-        if code is None:
-            pass
-        elif code in ALLOWED_CODES:
-            ok = True
-            len_of_current_field_hex = data[index:index + 1].hex()
-            index += 1
-
-            len_of_current_field_decimal = int(len_of_current_field_hex, 16)
-
-
-        else:
-            print(RED_COLOR + "EEPROM data isn't valid" + RESET_STYLE_BLACK_BG)
-            time.sleep(3)
-            loop_main()
-            print(RESET_STYLE)
-            exit()
-        if ok:
-            field_data = data[index:index + len_of_current_field_decimal]
-            index += len_of_current_field_decimal
-            if code == "24":
-                if verbose:
-                    print(field_data.hex().upper() + " " * (22 - len(field_data.hex().upper())) + "|")
-                else:
-                    codes_data.append(field_data.hex().upper())
-            elif code == "2a":
-                field_data = field_data.hex().upper()
-                while field_data.startswith("0"):
-                    field_data = field_data[1:]
-                if verbose:
-                    print(field_data + " " * (22 - len(field_data)) + "|")
-                else:
-                    codes_data.append(field_data)
-            elif code == "fd":
-                if verbose:
-                    line = field_data.hex()
-                    for i in range(0, len(line), 60):
-                        print(line[i:i + 60])
-
-                else:
-                    codes_data.append(field_data)
-            elif code == "fe":
-                if verbose:
-                    print(field_data.hex().upper() + " " * (22 - len(field_data.hex().upper())) + "|")
-                else:
-                    codes_data.append(field_data.hex().upper())
-                checksum_in_fru = field_data.hex().upper()
-            elif code == "ff":
-                break
-            else:
-                if verbose:
-                    print(field_data.decode() + " " * (22 - len(field_data.decode())) + "|")
-                else:
-                    codes_data.append(field_data.decode())
-            if code in ["fd", "fe"]:  # ["22", "23", "24", "2c", "fd", "fe"]:
-                if verbose:
-                    print()
-    if checksum_in_fru == hex(checksum_should_be)[2:].upper():
-        is_checksum_correct = "Checksum is ok"
-    else:
-        is_checksum_correct = "Checksum is incorrect !!!!!!!!!!!!!!!!!!"
-    if verbose:
-        print("-" * 64)
-        if "ok" not in is_checksum_correct:
-            print("Checksum should be %s\n" % hex(checksum_should_be)[2:].upper() +
-                  RED_COLOR + "%s" % is_checksum_correct + RESET_STYLE_BLACK_BG)
-        else:
-            print("Checksum should be %s\n" % hex(checksum_should_be)[2:].upper() +
-                  GREEN_COLOR + "%s" % is_checksum_correct + RESET_STYLE_BLACK_BG)
-    return codes, codes_data
-
-
 def print_fru_file_in_hex(file_name="onie_eeprom", read_from_fru=True):
     """
     Print FRU Data/FRU File In Hex
@@ -768,8 +562,7 @@ def print_fru_file_in_hex(file_name="onie_eeprom", read_from_fru=True):
     if file_name.endswith(".bin"):
         file_name = file_name[:-4]
     if read_from_fru:
-        output_file_name = output_fru_data_to_bin_file( verbose=False)
-        #print("output_file_name=", output_file_name)
+        output_file_name = output_fru_data_to_bin_file(verbose=False)
         output_file_name = output_file_name[:-4]
     else:
         if os.path.isfile(file_name + ".bin"):
@@ -924,11 +717,7 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
     if config_file != 'non':
         print("\n\nPrinting Current Data In FRU\n\n")
         time.sleep(2)
-        # print_fru_file_data()
-        print_config_fru_file_data(file_name=file_name, read_from_fru=False, config_file=config_file)
-
-
-
+        print_123(file_name = file_name , read_from_fru=False)
 
 
 def write_to_host_and_bmc_fru(file_name="onie_eeprom", config_file="333"):
@@ -952,7 +741,7 @@ def write_to_host_and_bmc_fru(file_name="onie_eeprom", config_file="333"):
         print(RESET_STYLE)
         exit()
     # HOST
-    write_to_host_fru(file_name=file_name , fru_data=fru_data, config_file=config_file)
+    write_to_host_fru(file_name=file_name, fru_data=fru_data, config_file=config_file)
 
 
 def get_list_of_bin_or_txt_files_in_current_dir(file_type, sub_dir=""):
@@ -1054,11 +843,9 @@ def read_config_file(config_file, burn=False):
         file_name = config_file[:-4]
 
     result_dict = create_dic(config_file)
-
     print(GREEN_COLOR + "Building The Bin file ." + RESET_STYLE_BLACK_BG + "\n")
 
     # for supported_code in ["21", "22", "23", "24", "25", "27", "2a", "2b", "2c", "2d", "fd"]:
-
     fru_data_list = []
     header_string = HEADER_STRING
     header_version = HEADER_VERSION
@@ -1072,24 +859,39 @@ def read_config_file(config_file, burn=False):
         if key == '0xfd':
             break
 
-        if key == "0x24":
-            system_mac = (result_dict.get("0x24"))
-            mac_string = system_mac[0]  # Access the string within the list
-            mac_integer = int(mac_string, 16)  # Convert the string to an integer
-            system_mac = mac_integer.to_bytes(6, "big")  # Convert the integer to bytes
-            fru_data_list.append(b"\x24\x06" + system_mac)  # index 7
-            new_data_len += 2 + 6
-            continue
-
         if key == "0x25":
             manufacture_date = str(' '.join(result_dict.get("0x25")))
             fru_data_list.append(b"\x25\x13" + manufacture_date.encode())  # index 9
             new_data_len += 2 + 19
             continue
 
+        ####################################
+
+        if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84":
+            # all other FD values that are hex
+            value = (result_dict.get(key))
+            value = value[0]
+            if key == "0x83" or key == "0x84":
+                if len(value) != 15:
+                    print(RED_COLOR + f"IMEI len is wrong should be 15 char actual {len(value)}")
+                    sys.exit(1)
+                else:
+                    value = value.zfill(16)
+            # convert key to integer and interpreting it as a hexadecimal number
+            hex_value_key = int(key, 16)
+            # Convert the integer value to a single-byte bytes object
+            binary_value_key = bytes([hex_value_key])
+            value_integer = int(value, 16)  # Convert the string to an integer
+            # print(mac_integer)
+            new_value = value_integer.to_bytes(int(len(value) / 2), "big")  # Convert the integer to bytes
+
+            fru_data_list.append(binary_value_key + len(new_value).to_bytes(1, "big") + new_value)
+            new_data_len += 2 + (len(value) / 2)
+            continue
+
+        # All other keys that are ASCII
         value = (result_dict.get(key))
         value = value[0]
-
         # convert key to integer and interpreting it as a hexadecimal number
         hex_value_key = int(key, 16)
         # Convert the integer value to a single-byte bytes object
@@ -1097,63 +899,18 @@ def read_config_file(config_file, burn=False):
         fru_data_list.append(binary_value_key + len(value.encode()).to_bytes(1, "big") + value.encode())  # index 3
         new_data_len += 2 + len(value.encode())
 
-    ####   for FD and all other keys after FD #######
-    start_loop = False
-
-    #vendor_extension = IANA_CODE_OF_SILICOM  # IANA code of Silicom
-    # fd_data_len = 4
-    fd_vendor_extension = []
-    fd_data_len = 0
-    for key in result_dict:
-
-        if key == '0xfd':
-            start_loop = True
-            continue
-
-        if start_loop:
-            ####  all other keys that are not 0xfd, 0x24 , 0x25
-            if key == '0x81':
-                hex_value_key = int(key, 16)
-                binary_value_key = bytes([hex_value_key])
-                fd_vendor_extension.append(binary_value_key + len(IANA_CODE_OF_SILICOM).to_bytes(1, "big") + IANA_CODE_OF_SILICOM)  # IANA code of Silicom
-                fd_data_len += 6
-                continue
-            if key == '0x84' or key == '0x82':
-                ####  all other keys that are not 0xfd, 0x24 , 0x25
-                value = (result_dict.get(key))
-                value = value[0]
-
-                # convert key to integer and interpreting it as a hexadecimal number
-                hex_value_key = int(key, 16)
-                # Convert the integer value to a single-byte bytes object
-                binary_value_key = bytes([hex_value_key])
-
-                fd_vendor_extension.append(
-                    binary_value_key + len(value.encode()).to_bytes(1, "big") + value.encode())  # index 3
-                fd_data_len += 2 + len(value.encode())
-                continue
-
-            # all other FD values that are hex
-            value = (result_dict.get(key))
-            value = value[0]
-
-            # convert key to integer and interpreting it as a hexadecimal number
-            hex_value_key = int(key, 16)
-            # Convert the integer value to a single-byte bytes object
-            binary_value_key = bytes([hex_value_key])
-            value_integer = int(value, 16)  # Convert the string to an integer
-            # print(mac_integer)
-            new_value = value_integer.to_bytes(int(len(value)/2), "big")  # Convert the integer to bytes
-
-            fd_vendor_extension.append(binary_value_key + len(new_value).to_bytes(1, "big") + new_value)
-            fd_data_len += 2 +  (len(value)/2)
-
-    fru_data_list.append(b"\xfd")
-    fd_data_len_in = int(float(fd_data_len)).to_bytes(1, "big")
-    fru_data_list.append(fd_data_len_in)
-    fru_data_list.extend(fd_vendor_extension)  # index 13
+    # ###   for FD and all other keys after FD #######
+    # start_loop = False
+    # fru_data_list.append(b"\xfd")
+    # new_data_len += 1
+    # fd_data_len_in = int(float(fd_data_len)).to_bytes(1, "big")
+    # fru_data_list.append(fd_data_len_in)
+    # fru_data_list.append(
+    #    len(IANA_CODE_OF_SILICOM).to_bytes(1, "big") + IANA_CODE_OF_SILICOM)  # IANA code of Silicom
+    # new_data_len += 1 + len(IANA_CODE_OF_SILICOM)
+    # fru_data_list.extend(fd_vendor_extension)  # index 13
     fru_data_list.append(b"\xfe\x04")  # index 14
-    new_data_len += 4 + 4 + fd_data_len  # fd + index 12 + fd_data len
+    new_data_len += 2 + 4    # b"\xfe\x04 + checksum
     new_data_len = int(new_data_len)
     fru_data_list[2] = new_data_len.to_bytes(2, "big")
     fru_data = b"".join(fru_data_list)
@@ -1161,8 +918,8 @@ def read_config_file(config_file, burn=False):
     if not os.path.isdir("FRU_Backup_files"):
         os.mkdir("FRU_Backup_files")
     file_name = "fru_" + datetime.datetime.now().strftime("%m.%d.%Y__%H_%M_%S") + ".bin"
-    file_path= os.path.join("FRU_Backup_files", file_name)
-    current_directory = os.getcwd()
+    file_path = os.path.join("FRU_Backup_files", file_name)
+    # current_directory = os.getcwd()
     # write data to file and read from file (the data changes)
     with open(file_path, "wb") as file:
         file.write(fru_data)
@@ -1178,20 +935,95 @@ def read_config_file(config_file, burn=False):
 
     # write data to host and bmc FRUs
     if burn:
-        file_ready = True
+        # file_ready = True
         write_to_host_and_bmc_fru(file_name=f"FRU_Backup_files/{file_name}",
                                   config_file=config_file)
 
     else:
-        file_ready = True
+        # file_ready = True
         # os.system('clear')
         print(GREEN_COLOR + f"A binary file has been generated and saved at the"
                             f" following location: FRU_Backup_files/{file_name}" + RESET_STYLE_BLACK_BG + "\n")
-        print_config_fru_file_data(file_name=file_path, read_from_fru=False, config_file=config_file)
+        # print_config_fru_file_data(file_name=file_path, read_from_fru=False, config_file=config_file)
+        print_123(file_name=file_path, read_from_fru=False)
     return
 
 
-def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_fru=True, config_file='ccc'):
+def ask_what_to_do_and_call_the_right_func():
+    """ asks the user what to do """
+    print(CYAN_COLOR + "Script Version: '%s'" % SCRIPT_VERSION + RESET_STYLE_BLACK_BG)
+
+    what_to_do = input("1. Create a Bin File Based On fru_config.txt File data\n"
+                       "2. Program Fru Based On The Data In the fru_config.txt File \n"
+                       "3. Display The Information Stored In Fru Backup File \n"
+                       "4. Program a Bin File To Host Fru\n"
+                       "5. Display Hex output of the Data Stored In The Fru\n"
+                       "6. Display Hex output of Data stored In a Backup Bin File \n"
+                       "7. Create a Bin File From The Data Stored In The FRU)\n\n"
+
+
+                       "Mode = ")
+    # delete input line and rewrite to add ' before and after the input
+    sys.stdout.write("\033[F")
+    sys.stdout.write("\033[K")
+    # check user input
+    if what_to_do in [str(i) for i in range(1, 9)]:
+        print(GREEN_COLOR + "Mode = '%s'." % what_to_do + RESET_STYLE_BLACK_BG + "\n\n")
+    else:
+        print(RED_COLOR + "Unknown Mode '%s'." % what_to_do + RESET_STYLE_BLACK_BG + "\n\n")
+    # call the function that does what the user wants
+
+    if what_to_do == "7":  # create a file of the fru
+        output_file_name = output_fru_data_to_bin_file(file_name="take system time")
+        print(GREEN_COLOR + "FRU Data Has Been Dumped To '%s'" % output_file_name, RESET_STYLE_BLACK_BG)
+        print_config_fru_file_data(verbose=True, file_name=output_file_name, read_from_fru=False, config_file='ccc')
+        return True
+    elif what_to_do == "3":  # print fru data of desired file
+        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
+        sub_dir = "/FRU_Backup_files/"
+        path = os.getcwd()
+        path = path + sub_dir
+        file_name = path + file_name
+        # print_config_fru_file_data(file_name=file_name, read_from_fru=False)
+        print_123(file_name=file_name, read_from_fru=False)
+        return True
+    elif what_to_do == "4":  # program desired file to host fru
+        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
+        # file_name = print_list_of_bin_files_and_ask_user_to_chose()
+        sub_dir = "/FRU_Backup_files/"
+        path = os.getcwd()
+        path = path + sub_dir
+        file_name = path + file_name
+        # with open(file_name + ".bin", "rb") as file:
+        with open(file_name, "rb") as file:
+            fru_data = file.read()
+        write_to_host_fru(fru_data=fru_data)
+        return True
+    elif what_to_do == "5":
+        print_fru_file_in_hex()
+        return True
+    elif what_to_do == "6":
+        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
+        print_fru_file_in_hex(read_from_fru=False, file_name=file_name)
+        return True
+    elif what_to_do == "2":
+        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
+        read_config_file(file_name, True)
+        return True
+    # elif what_to_do == "3":
+    #     file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
+    #     # print_config_fru_file_data(verbose=True, file_name=file_name, read_from_fru=True)
+    #     print_config_fru_file_data(config_file=file_name)
+    #     return True
+    elif what_to_do == "1":
+        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
+        read_config_file(file_name, False)
+        return True
+
+    return False
+
+
+def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
     """
     prints the fru data from the file_name.bin file
     :param verbose: print everything or just return the codes and codes_data from the file
@@ -1204,7 +1036,6 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
              data (in the same order as the first list)
     :rtype: tuple (of 2 lists that contain str)
     """
-
     checksum_in_fru = None
     checksum_should_be = 0
     codes = []
@@ -1223,8 +1054,7 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
             print(RESET_STYLE)
             exit()
     # open the file with the fru data
-    current_directory = os.getcwd()
-    with open(f"{output_file_name}.bin", "rb") as file:
+    with open(output_file_name + ".bin", "rb") as file:
         data = file.read()
     if not len(data) >= 11:
         print(RED_COLOR + "FRU File Isn't Valid." + RESET_STYLE_BLACK_BG)
@@ -1271,7 +1101,9 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
     if len(data_len_hex_msb) == 1:
         data_len_hex_msb = "0" + data_len_hex_msb
     # convert data len to decimal
-    data_len = int(data_len_hex_lsb, 16) + int(data_len_hex_msb, 16) * 256
+
+    data_len = ((int(data_len_hex_lsb, 16) & 0xFF) + ((int(data_len_hex_msb, 16) & 0xFF) << 8))
+
     if len(data) > data_len + 11:
         checksum_should_be = binascii.crc32(data[:data_len + 11 - 4])
     elif len(data) == data_len + 11:
@@ -1283,15 +1115,15 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
         print(RESET_STYLE)
         exit()
     if verbose:
-        print("-" * 64)
-        print(" " * 3 + "Code Meaning" + " " * 6 + "|     " + "Code" + "     |" + " " * 9 + "Data" + " " * 13 + "|")
+        print("-" * 73)
+        print(" " * 3 + "Code Meaning" + " " * 6 + "|     " + "Code" + "     |" + " " * 9 + "Data" + " " * 23 + "|")
         print()
     while index - 8 - 1 - 2 < data_len:
         code = data[index:index + 1].hex()
         index += 1
         if code not in ALLOWED_CODES or code not in CODES_MEANING:
-            print(RED_COLOR + f"Unknown Code '%s'." % code  + RESET_STYLE)
-            time.sleep(6)
+            print("Unknown Code '%s'." % code)
+            time.sleep(3)
             loop_main()
             print(RESET_STYLE)
             exit()
@@ -1326,13 +1158,11 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
             pass
         elif code in ALLOWED_CODES:
             ok = True
-            if code == 'fd':
-                index += 1
-                ok = False
-            else:
-                len_of_current_field_hex = data[index:index + 1].hex()
-                index += 1
-                len_of_current_field_decimal = int(len_of_current_field_hex, 16)
+            len_of_current_field_hex = data[index:index + 1].hex()
+            index += 1
+
+            len_of_current_field_decimal = int(len_of_current_field_hex, 16)
+
 
         else:
             print(RED_COLOR + "EEPROM data isn't valid" + RESET_STYLE_BLACK_BG)
@@ -1343,18 +1173,31 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
         if ok:
             field_data = data[index:index + len_of_current_field_decimal]
             index += len_of_current_field_decimal
-            if code == "24" or code == '83' or code == '85':
+            if code == "24" or code == "54" or code == "83" or code == "84":
+                #print(RED_COLOR +f"the code=", code + RESET_STYLE)
                 if verbose:
-                    print(field_data.hex().upper() + " " * (22 - len(field_data.hex().upper())) + "|")
+                    print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
                 else:
                     codes_data.append(field_data.hex().upper())
-            elif code == "81":
-                 field_data = field_data.hex().upper()
-                 print(field_data + " " * (22 - len(field_data.upper())) + "|")
+            elif code == "2a":
+                field_data = field_data.hex().upper()
+                while field_data.startswith("0"):
+                    field_data = field_data[1:]
+                if verbose:
+                    print(field_data + " " * (32 - len(field_data)) + "|")
+                else:
+                    codes_data.append(field_data)
+            elif code == "fd":
+                if verbose:
+                    line = field_data.hex()
+                    for i in range(0, len(line), 60):
+                        print(line[i:i + 60])
 
+                else:
+                    codes_data.append(field_data)
             elif code == "fe":
                 if verbose:
-                    print(field_data.hex().upper() + " " * (22 - len(field_data.hex().upper())) + "|")
+                    print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
                 else:
                     codes_data.append(field_data.hex().upper())
                 checksum_in_fru = field_data.hex().upper()
@@ -1362,7 +1205,8 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
                 break
             else:
                 if verbose:
-                    print(field_data.decode() + " " * (22 - len(field_data.decode())) + "|")
+                    #print(field_data)
+                    print(field_data.decode() + " " * (32 - len(field_data.decode())) + "|")
                 else:
                     codes_data.append(field_data.decode())
             if code in ["fd", "fe"]:  # ["22", "23", "24", "2c", "fd", "fe"]:
@@ -1373,7 +1217,7 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
     else:
         is_checksum_correct = "Checksum is incorrect !!!!!!!!!!!!!!!!!!"
     if verbose:
-        print("-" * 64)
+        print("-" * 74)
         if "ok" not in is_checksum_correct:
             print("Checksum should be %s\n" % hex(checksum_should_be)[2:].upper() +
                   RED_COLOR + "%s" % is_checksum_correct + RESET_STYLE_BLACK_BG)
@@ -1381,79 +1225,6 @@ def print_config_fru_file_data(verbose=True, file_name="onie_eeprom", read_from_
             print("Checksum should be %s\n" % hex(checksum_should_be)[2:].upper() +
                   GREEN_COLOR + "%s" % is_checksum_correct + RESET_STYLE_BLACK_BG)
     return codes, codes_data
-
-
-def ask_what_to_do_and_call_the_right_func():
-    """ asks the user what to do """
-    print(CYAN_COLOR + "Script Version: '%s'" % SCRIPT_VERSION + RESET_STYLE_BLACK_BG)
-
-    what_to_do = input("1. Create a Bin File Based On fru_config.txt File data\n"
-                       "2. Program Fru Based On fru_config.txt File data\n"
-                       "3. Show Data Stored In Fru Backup File (Withot Having a Config File)\n"
-                       "4. Program Bin File To Host Fru\n"
-                       "5. Print Fru Data In Hex\n"
-                       "6. Print Fru Backup File In Hex\n"
-                       "7. Create Fru Bin File (From fru)\n\n"
-
-
-                       "Mode = ")
-    # delete input line and rewrite to add ' before and after the input
-    sys.stdout.write("\033[F")
-    sys.stdout.write("\033[K")
-    # check user input
-    if what_to_do in [str(i) for i in range(1, 9)]:
-        print(GREEN_COLOR + "Mode = '%s'." % what_to_do + RESET_STYLE_BLACK_BG + "\n\n")
-    else:
-        print(RED_COLOR + "Unknown Mode '%s'." % what_to_do + RESET_STYLE_BLACK_BG + "\n\n")
-    # call the function that does what the user wants
-
-    if what_to_do == "7":  # create a file of the fru
-        output_file_name = output_fru_data_to_bin_file(file_name="take system time")
-        print(GREEN_COLOR + "FRU Data Has Been Dumped To '%s'" % output_file_name, RESET_STYLE_BLACK_BG)
-        print_config_fru_file_data(verbose=True, file_name=output_file_name, read_from_fru=False, config_file='ccc')
-        return True
-    elif what_to_do == "3":  # print fru data of desired file
-        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
-        sub_dir = "/FRU_Backup_files/"
-        path = os.getcwd()
-        path = path + sub_dir
-        file_name = path + file_name
-        print_config_fru_file_data(file_name=file_name, read_from_fru=False)
-        return True
-    elif what_to_do == "4":  # program desired file to host fru
-        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
-        # file_name = print_list_of_bin_files_and_ask_user_to_chose()
-        sub_dir = "/FRU_Backup_files/"
-        path = os.getcwd()
-        path = path + sub_dir
-        file_name = path + file_name
-        # with open(file_name + ".bin", "rb") as file:
-        with open(file_name, "rb") as file:
-            fru_data = file.read()
-        write_to_host_fru(fru_data=fru_data)
-        return True
-    elif what_to_do == "5":
-        print_fru_file_in_hex()
-        return True
-    elif what_to_do == "6":
-        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
-        print_fru_file_in_hex(read_from_fru=False, file_name=file_name)
-        return True
-    elif what_to_do == "2":
-        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
-        read_config_file(file_name, True)
-        return True
-    # elif what_to_do == "3":
-    #     file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
-    #     # print_config_fru_file_data(verbose=True, file_name=file_name, read_from_fru=True)
-    #     print_config_fru_file_data(config_file=file_name)
-    #     return True
-    elif what_to_do == "1":
-        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
-        read_config_file(file_name, False)
-        return True
-
-    return False
 
 
 def main():
