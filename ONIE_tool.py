@@ -24,7 +24,7 @@ import re
 
 
 # Constants
-SCRIPT_VERSION = 5.0
+SCRIPT_VERSION = 5.1
 
 
 def check_py_ver():
@@ -552,13 +552,7 @@ def print_fru_file_in_hex(file_name="onie_eeprom", read_from_fru=True):
     :type file_name: str
     :type read_from_fru: bool
     """
-    print("def print_fru_file_in_hex")
-    sub_dir = "/FRU_Backup_files/"
-    # print(file_name)
-    path = os.getcwd()
-    path = path + sub_dir
-    file_name = path + file_name
-    # print(file_name)
+
     if file_name.endswith(".bin"):
         file_name = file_name[:-4]
     if read_from_fru:
@@ -764,7 +758,8 @@ def get_list_of_bin_or_txt_files_in_current_dir(file_type, sub_dir=""):
     for line in output_lines:
         file_name = line.split(" ")[-1]
         if file_name.endswith(file_type):
-            bin_or_txt_files.append(file_name)
+            #bin_or_txt_files.append(file_name)
+            bin_or_txt_files.append(path + "/" + file_name)
     # print("bin_or_txt_files=", bin_or_txt_files)
     return bin_or_txt_files
 
@@ -784,7 +779,9 @@ def print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type, sub_dir):
     files_index_list = []
     print("%s Files In Current Directory:\n" % file_type)
     for file in files:
-        print(str(files.index(file) + 1) + ". " + file)
+        #print(str(files.index(file) + 1) + ". " + file)
+        print(str(files.index(file) + 1) + ". "  + file.split("/")[-1] + RESET_STYLE_BLACK_BG)  # Modified to print only the file name
+
         files_index_list.append(str(files.index(file) + 1))
     print("\n\n")
     ok = False
@@ -796,7 +793,6 @@ def print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type, sub_dir):
             ok = True
         else:
             print(RED_COLOR + "Please Enter A Number That Is In The List." + RESET_STYLE_BLACK_BG)
-
     return file_name
 
 
@@ -980,21 +976,10 @@ def ask_what_to_do_and_call_the_right_func():
         return True
     elif what_to_do == "3":  # print fru data of desired file
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
-        sub_dir = "/FRU_Backup_files/"
-        path = os.getcwd()
-        path = path + sub_dir
-        file_name = path + file_name
-        # print_config_fru_file_data(file_name=file_name, read_from_fru=False)
         print_123(file_name=file_name, read_from_fru=False)
         return True
     elif what_to_do == "4":  # program desired file to host fru
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
-        # file_name = print_list_of_bin_files_and_ask_user_to_chose()
-        sub_dir = "/FRU_Backup_files/"
-        path = os.getcwd()
-        path = path + sub_dir
-        file_name = path + file_name
-        # with open(file_name + ".bin", "rb") as file:
         with open(file_name, "rb") as file:
             fru_data = file.read()
         write_to_host_fru(fru_data=fru_data)
@@ -1010,11 +995,6 @@ def ask_what_to_do_and_call_the_right_func():
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
         read_config_file(file_name, True)
         return True
-    # elif what_to_do == "3":
-    #     file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
-    #     # print_config_fru_file_data(verbose=True, file_name=file_name, read_from_fru=True)
-    #     print_config_fru_file_data(config_file=file_name)
-    #     return True
     elif what_to_do == "1":
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
         read_config_file(file_name, False)
