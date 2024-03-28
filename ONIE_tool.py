@@ -16,7 +16,6 @@ import os
 import subprocess
 import sys
 import time
-import binascii
 import traceback
 import binascii
 from collections import OrderedDict
@@ -127,8 +126,8 @@ NUMBER_OF_MACS = b"\x00\x09"
 
 ALLOWED_CODES = ["21", "22", "23", "24", "25", "26", "27", "28", "29",
                  "2a", "2b", "2c", "2d", "2e", "2f", "51", "52", "53",
-                 "54", "55", "56", "57", "58", "59", "5A", "5B", "5C",
-                 "5D", "5E", "5F", "fd",  "81", "82", "83", "84", "85", "86", "87", "fe"]
+                 "54", "55", "56", "57", "58", "59", "5a", "5b", "5c",
+                 "5d", "5e", "5f", "fd",  "81", "82", "83", "84", "85", "86", "87", "fe"]
 NOT_ALLOWED_CODES = ["00", "ff"]
 CODES_MEANING = {"21": "Product Name: ",
                  "22": "Part Number: ",
@@ -154,12 +153,12 @@ CODES_MEANING = {"21": "Product Name: ",
                  "57": "sys family",
                  "58": "sys wake-up type",
                  "59": "board manufacture",
-                 "5A": "board product name",
-                 "5B": "board version",
-                 "5C": "board serial number",
-                 "5D": "board asset tag",
-                 "5E": "chassis manufacture",
-                 "5F": "chassis serial number",
+                 "5a": "board product name",
+                 "5b": "board version",
+                 "5c": "board serial number",
+                 "5d": "board asset tag",
+                 "5e": "chassis manufacture",
+                 "5f": "chassis serial number",
                  "60": "chassis version",
                  "fd": "Vendor Extension: ",
                  "81": "silicom_onie_version",

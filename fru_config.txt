@@ -1,49 +1,64 @@
 # product name
-21 DU-ICXSP-ES0
+0x21 DU-ICXSP-ES0
 # Part number
-22 90500-0169-E6
+0x22 90500-0169-E6
 # Serial Number (10 digits)
-23 9230220103
+0x23 9230220103
 # MAC
-24 00E0EDF0A0FC
+0x24 00E0EDF0A0FC
 # Manufacture Date  MM/DD/YYYY HH:NN:SS
-25 10/22/2023 09:54:24
+0x25 10/22/2023 09:54:24
 # Label Revision
-27 101
+0x27 R002
 # Number Of MACs
-2a 9
+0x2a 29
 # Manufacturer
-2b BILICOM
+0x2b BILICOM
 # Country Code
-2c IL
+0x2c IL
 # vendor
-2d BILICOM
-# vendor_extension  default:  be b"\xfd"
-FD  b"\xfd"
-# IANA_CODE_OF_SILICOM  default: b"\x00\x00\x3d\x4e"
-IANA_CODE_OF_SILICOM  b"\x00\x00\x3d\x4e"
+0x2d BILICOM
 
-###############################################################################################
-##### all lines under this line should contain:
-##### field_name  value type(HEX or ASCII)  number_of_bytes
-##### example: 
-##### SERIAL_NUMBER 1234567890 ASCII 10
+##########################################
+0x51 555555555555555555555555555555
+0x52 666666666666666666666666666666
+0x53 777777777777777777777777777777
+0x54 123456789ABCDEF123456789ABCDEF12
+
+
+#silicom_onie_version  R002 ASCII 4
+0x81 R002
+#TNB 1234567891234   ASCII 13
+0x82 1234567891234
+
+#IMEI1 15 Char  (HEX) 
+0x83   123456789123456 
+
+
+#TNB2
+0x85 1234567891234 
+
+
+
+
+
+
+
+
+
+
+
+#################################################################################################
+#
+#
+#                     FD section
+#
+#
 ################################################################################################
 
+# vendor_extension  default:  be b"\xfd"
+# 0xfd  b"\xfd"
+# IANA_CODE_OF_SILICOM  default: b"\x00\x00\x3d\x4e"
+# IANA_CODE_OF_SILICOM  b"\x00\x00\x3d\x4e"
+# 0x81 b"\x00\x00\x3d\x4e"
 # silicom_onie_version (ASCII format , 4 bytes example: R002)
-silicom_onie_version  R002 ASCII 4
-# wake_up_type (1 byte (hex) example: 00)
-wake_up_type 00 HEX 1
-# UUID (8 bytes hex  example: 0001020304050607 )
-UUID 0001020304050607 HEX 8
-# TNB - Tracking number (13 bytes ASCII)
-TNB 1234567891234   ASCII 13
-#TNB2 Tracking number #2 (13 bytes ASCII)
-TNB2 1234567891234 ASCII 13
-#SERIAL_NUMBER (10 bytes ASCII)
-SERIAL_NUMBER 1234567890 ASCII 10
-#IMEI1 LTE1 IMEI (8 bytes hex. example: 0001020304050607"
-#IMEI1 0001020304050607 HEX 8
-#IMEI2 LTE1 IMEI (8 bytes hex. example: 0001020304050607"
-IMEI2 0001020304050607 HEX  8
-
