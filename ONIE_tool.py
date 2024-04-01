@@ -23,7 +23,7 @@ import re
 
 
 # Constants
-SCRIPT_VERSION = 5.1
+SCRIPT_VERSION = 5.2
 
 
 def check_py_ver():
@@ -681,7 +681,7 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
             while not ok:
                 if count == 10:
                     print("\n\n\n--------------------------------------------------\n\n")
-                    print(" " * 13 + RED_COLOR + "2Couldn't Write To FRU" + RESET_STYLE_BLACK_BG)
+                    print(" " * 13 + RED_COLOR + "Couldn't Write To FRU" + RESET_STYLE_BLACK_BG)
                     print(RED_COLOR + "!!!!!!!!!!!! FRU Creation Failed !!!!!!!!!!!!!" + RESET_STYLE_BLACK_BG)
                     print("\n\n--------------------------------------------------\n\n\n")
                     time.sleep(3)
@@ -690,11 +690,13 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
                     exit()
                 try:
                     if i < 256:
-                        pass
+                        bus.write_byte_data(smbus_device_id1, i, 255)
+                        print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
+                        ok = True
                     else:
-                        pass
-                    print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
-                    ok = True
+                        bus.write_byte_data(smbus_device_id2, i, 255)
+                        print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
+                        ok = True
                 except Exception as err:
                     with open("errors.log", "a") as errors_file:
                         errors_file.write(traceback.format_exc() + "\n")
