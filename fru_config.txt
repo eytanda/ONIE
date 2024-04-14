@@ -1,13 +1,19 @@
+#####################
+#### config file
+#### In case that no dat is entered, the program will ask the user to enter value
+#### In case that no date is enetered for filed 0x25 , it will use the current date and time
+
+
 # product name
 0x21 DU-ICXSP-ES0
 # Part number
 0x22 90500-0169-E6
 # Serial Number (10 digits)
-0x23 9230220103
+0x23
 # MAC
 0x24 00E0EDF0A0FC
 # Manufacture Date  MM/DD/YYYY HH:NN:SS
-0x25 10/22/2023 09:54:24
+0x25
 # Label Revision
 0x27 R002
 # Number Of MACs
@@ -18,23 +24,12 @@
 0x2c IL
 # vendor
 0x2d BILICOM
-
-##########################################
-0x51 555555555555555555555555555555
-0x52 666666666666666666666666666666
-0x53 777777777777777777777777777777
-0x54 123456789ABCDEF123456789ABCDEF12
-
-
 #silicom_onie_version  R002 ASCII 4
 0x81 R002
 #TNB 1234567891234   ASCII 13
 0x82 1234567891234
-
 #IMEI1 15 Char  (HEX) 
 0x83   123456789123456 
-
-
 #TNB2
 0x85 1234567891234 
 

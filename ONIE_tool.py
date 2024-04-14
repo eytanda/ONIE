@@ -23,7 +23,7 @@ import re
 
 
 # Constants
-SCRIPT_VERSION = 5.2
+SCRIPT_VERSION = 5.3
 
 
 def check_py_ver():
@@ -818,12 +818,25 @@ def create_dic(file_name="xxx"):
             if len(words) >= 2:
                 key = words[0]
                 values = words[1:]
+            else:
+                key = words[0]
+                if key == '0x25':
+                    values = [(datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S"))]
+                    #values = str(' '.join(values))
+                    #values = values.encode()
+
+                    print(values)
+                else:
+                    values = [input(f"Enter Data for the " + GREEN_COLOR +  f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
+
+
 
                 # Add key-value pair to the OrderedDict
-                data_dict[key] = values
-            else:
-                print(f"Ignoring invalid line: {line.strip()}")
+            data_dict[key] = values
 
+            #else:
+            #    print(f"Ignoring invalid line: {line.strip()}")
+    print(data_dict)
     return data_dict
 
 
