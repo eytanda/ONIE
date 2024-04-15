@@ -23,7 +23,7 @@ import re
 
 
 # Constants
-SCRIPT_VERSION = 5.3
+SCRIPT_VERSION = 5.4
 
 
 def check_py_ver():
@@ -144,30 +144,30 @@ CODES_MEANING = {"21": "Product Name: ",
                  "2d": "Vendor: ",
                  "2e": "Diag Version: ",
                  "2f": "Service Tag: ",
-                 "51": "sys manufacture",
-                 "52": "sys product name ",
-                 "53": "sys serial number",
-                 "54": "UUID (hex)",
-                 "55": "sys version",
-                 "56": "sys SKU",
-                 "57": "sys family",
-                 "58": "sys wake-up type",
-                 "59": "board manufacture",
-                 "5a": "board product name",
-                 "5b": "board version",
-                 "5c": "board serial number",
-                 "5d": "board asset tag",
-                 "5e": "chassis manufacture",
-                 "5f": "chassis serial number",
-                 "60": "chassis version",
+                 "51": "sys manufacture: ",
+                 "52": "sys product name: ",
+                 "53": "sys serial number: ",
+                 "54": "UUID (hex): ",
+                 "55": "sys version: ",
+                 "56": "sys SKU: ",
+                 "57": "sys family: ",
+                 "58": "sys wake-up type: ",
+                 "59": "board manufacture: ",
+                 "5a": "board product name: ",
+                 "5b": "board version: ",
+                 "5c": "board serial number: ",
+                 "5d": "board asset tag: ",
+                 "5e": "chassis manufacture: ",
+                 "5f": "chassis serial number: ",
+                 "60": "chassis version: ",
                  "fd": "Vendor Extension: ",
-                 "81": "silicom_onie_version",
-                 "82": "TNB1",
-                 "83": "IMEI1",
-                 "84": "IMEI2",
-                 "85": "TNB1",
-                 "86": "TNB2",
-                 "87": "TNB3",
+                 "81": "silicom_onie_version: ",
+                 "82": "TNB1: ",
+                 "83": "IMEI1: ",
+                 "84": "IMEI2: ",
+                 "85": "TNB1: ",
+                 "86": "TNB2: ",
+                 "87": "TNB3: ",
                  "fe": "CRC-32 (checksum): "}
 ALLOWED_CHARS = [chr(num) for num in range(65, 91)]  # A - Z
 ALLOWED_CHARS += [chr(num) for num in range(97, 123)]  # a - z
@@ -797,6 +797,45 @@ def print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type, sub_dir):
     return file_name
 
 
+def is_valid_mac_address(mac_address):
+    """
+        Check if the given string is a valid MAC address.
+
+        This function utilizes a regular expression to verify if the provided string adheres to the
+         standard MAC address format.
+        A valid MAC address consists of exactly 12 hexadecimal digits (0-9, a-f, A-F).
+
+        Parameters:
+        - mac_address (str): The string to be checked as a MAC address.
+
+        Returns:
+        - bool: True if the string is a valid MAC address, False otherwise.
+
+        """
+    # Use a regular expression to check if the MAC address has exactly 12 hex digits
+    #print(mac_address)
+    pattern = re.compile(r'^[0-9a-fA-F]{12}$')
+    return bool(pattern.match(str(mac_address)))
+
+def is_valid_serial_number(serial_number):
+    pattern = re.compile(r'^\d{10}$')
+    return bool(pattern.match(str(serial_number)))
+
+def is_valid_TN(tracking_number):
+    pattern = re.compile(r'^\d{13}$')
+    return bool(pattern.match(str(tracking_number)))
+
+def is_valid_IMEI(IMEI_number):
+    pattern = re.compile(r'^\d{15}$')
+    return bool(pattern.match(str(IMEI_number)))
+
+def is_valid_version(version):
+    pattern = re.compile(r'^[0-9a-zA-Z]{4}$')
+    return bool(pattern.match(str(version)))
+
+
+
+
 def create_dic(file_name="xxx"):
     data_dict = OrderedDict()
 
@@ -825,18 +864,62 @@ def create_dic(file_name="xxx"):
                     #values = str(' '.join(values))
                     #values = values.encode()
 
-                    print(values)
+                    #print(values)
                 else:
-                    values = [input(f"Enter Data for the " + GREEN_COLOR +  f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
+                    data_ok = False
+                    while data_ok == False:
+                        values = [input(f"Enter Data for the " + GREEN_COLOR +  f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
+                        if key =='0x24':
+                            if not is_valid_mac_address(str(values[0])):
+                                print(RED_COLOR + f"Wrong MAC Address Format, Should be 12 chars 0-9 A-F Please try again:\n" +RESET_STYLE)
+                                data_ok = False
+                                continue
 
 
+
+                        if key == '0x23':
+                            if not is_valid_serial_number(str(values[0])):
+                                print(RED_COLOR + f"Wrong Serial number Format, Should be 10 Digits, Please try again:\n" +RESET_STYLE)
+                                data_ok = False
+                                continue
+                            else:
+                                data_ok =True
+
+                        if key == '0x27' or key == '0x81':
+                            if not is_valid_version(str(values[0])):
+                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" +RESET_STYLE)
+                                data_ok = False
+                                continue
+                            else:
+                                data_ok =True
+
+
+                        if key == '0x82' or key == '0x86' or key == '0x87':
+                            if not is_valid_TN(str(values[0])):
+                                print(RED_COLOR + f"Wrong Tracking number Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 13 Digits, Please try again:\n" +RESET_STYLE)
+                                data_ok = False
+                                continue
+                            else:
+                                data_ok =True
+
+                        if key == "0x83" or key == "0x84":
+                            if not is_valid_IMEI(str(values[0])):
+                                print(
+                                    RED_COLOR + f"Wrong IMEI len for {key} , {CODES_MEANING[key[2:]]},  should be 15 char" +RESET_STYLE)
+                                data_ok = False
+                                continue
+                            else:
+                                data_ok = True
+
+                        data_ok = True
 
                 # Add key-value pair to the OrderedDict
+
             data_dict[key] = values
 
             #else:
             #    print(f"Ignoring invalid line: {line.strip()}")
-    print(data_dict)
+    #print(data_dict)
     return data_dict
 
 
@@ -875,15 +958,43 @@ def read_config_file(config_file, burn=False):
             new_data_len += 2 + 19
             continue
 
+        if key == '0x27' or key == '0x81':
+            if not is_valid_version(str(result_dict[key][0])):
+                print(
+                    RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" + RESET_STYLE)
+                sys.exit(1)
+
+        if key == '0x82' or key == '0x86' or key == '0x87':
+            if not is_valid_TN(str(result_dict[key][0])):
+                print( RED_COLOR + f"Wrong Tracking number Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 13 Digits" + RESET_STYLE)
+                sys.exit(1)
+
         ####################################
+        ### verify Serial number format ####
+        if key == "0x23":
+            if not is_valid_serial_number(str(result_dict[key][0])):
+                print(RED_COLOR + f"The Config File Include a Wrong Serial number Format\n" + RESET_STYLE)
+                sys.exit(1)
+
+        ####################################
+        ### verify MAC address format ####
+
+        if key == "0x24":
+
+            if not is_valid_mac_address(str(result_dict[key][0])):
+                print(RED_COLOR + f"The Config File Include a Wrong MAC Address Format\n" +RESET_STYLE)
+                sys.exit(1)
+
 
         if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84":
             # all other FD values that are hex
             value = (result_dict.get(key))
             value = value[0]
             if key == "0x83" or key == "0x84":
-                if len(value) != 15:
-                    print(RED_COLOR + f"IMEI len is wrong should be 15 char actual {len(value)}")
+                #if len(value) != 15:
+                if not is_valid_IMEI(str(result_dict[key][0])):
+
+                    print(RED_COLOR + f"Wrong IMEI len for {key} , {CODES_MEANING[key[2:]]},  should be 15 char actual {len(value)}")
                     sys.exit(1)
                 else:
                     value = value.zfill(16)
