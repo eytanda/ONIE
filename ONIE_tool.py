@@ -20,10 +20,12 @@ import traceback
 import binascii
 from collections import OrderedDict
 import re
+from datetime import datetime
+
 
 
 # Constants
-SCRIPT_VERSION = 5.4
+SCRIPT_VERSION = 5.41
 
 
 def check_py_ver():
@@ -834,6 +836,21 @@ def is_valid_version(version):
     return bool(pattern.match(str(version)))
 
 
+def is_valid_datetime(date_string):
+    # Regular expression for the format MM/DD/YYYY HH:NN:SS
+    pattern = re.compile(r'^\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}$')
+
+    if not pattern.match(date_string):
+        return False
+
+    # Try to parse the date string using datetime
+    try:
+        datetime.strptime(date_string, '%m/%d/%Y %H:%M:%S')
+        return True
+    except ValueError:
+        return False
+
+
 
 
 def create_dic(file_name="xxx"):
@@ -953,10 +970,15 @@ def read_config_file(config_file, burn=False):
             break
 
         if key == "0x25":
-            manufacture_date = str(' '.join(result_dict.get("0x25")))
-            fru_data_list.append(b"\x25\x13" + manufacture_date.encode())  # index 9
-            new_data_len += 2 + 19
-            continue
+            if not is_valid_datetime(str(result_dict[key][0])):
+                print(
+                    RED_COLOR + f"Wrong DATE Format in filed {key} , {CODES_MEANING[key[2:]]}, Should MM/DD/YYYY HH:NN:SS" + RESET_STYLE)
+                sys.exit(1)
+            else:
+                manufacture_date = str(' '.join(result_dict.get("0x25")))
+                fru_data_list.append(b"\x25\x13" + manufacture_date.encode())  # index 9
+                new_data_len += 2 + 19
+                continue
 
         if key == '0x27' or key == '0x81':
             if not is_valid_version(str(result_dict[key][0])):
