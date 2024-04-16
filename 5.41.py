@@ -26,7 +26,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.42
+SCRIPT_VERSION = 5.41
 
 
 def check_py_ver():
@@ -1120,9 +1120,7 @@ def ask_what_to_do_and_call_the_right_func():
     if what_to_do == "7":  # create a file of the fru
         output_file_name = output_fru_data_to_bin_file(file_name="take system time")
         print(GREEN_COLOR + "FRU Data Has Been Dumped To '%s'" % output_file_name, RESET_STYLE_BLACK_BG)
-        #print_config_fru_file_data(verbose=True, file_name=output_file_name, read_from_fru=False, config_file='ccc')
-        print_123(file_name=output_file_name, read_from_fru=False)
-
+        print_config_fru_file_data(verbose=True, file_name=output_file_name, read_from_fru=False, config_file='ccc')
         return True
     elif what_to_do == "3":  # print fru data of desired file
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
