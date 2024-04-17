@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.46
+SCRIPT_VERSION = 5.48
 
 
 def check_py_ver():
@@ -819,12 +819,12 @@ def is_valid_mac_address(mac_address):
 
 
 def is_valid_serial_number(serial_number):
-    pattern = re.compile(r'^\d{10}$')
+    pattern = re.compile(r'^[0-9a-zA-Z]{10}$')
     return bool(pattern.match(str(serial_number)))
 
 
 def is_valid_TN(tracking_number):
-    pattern = re.compile(r'^\d{13}$')
+    pattern = re.compile(r'^[0-9a-zA-Z]{13}$')
     return bool(pattern.match(str(tracking_number)))
 
 
@@ -891,7 +891,7 @@ def create_dic(file_name="xxx"):
                                 data_ok = False
                                 continue
 
-                        if key == '0x23':
+                        if key == '0x23' or key == '0x53' :
                             if not is_valid_serial_number(str(values[0])):
                                 print(RED_COLOR + f"Wrong Serial number Format, "
                                                   f"Should be 10 Digits, Please try again:\n" + RESET_STYLE)
@@ -921,7 +921,7 @@ def create_dic(file_name="xxx"):
                             else:
                                 data_ok = True
 
-                        if key == '0x82' or key == '0x86' or key == '0x87':
+                        if key == '0x82' or key == '0x86' or key == '0x87' or key == '0x5c':
                             if not is_valid_TN(str(values[0])):
                                 print(RED_COLOR + f"Wrong Tracking number Format in filed {key},"
                                                   f" {CODES_MEANING[key[2:]]},"
@@ -999,14 +999,14 @@ def read_config_file(config_file, burn=False):
                                 f" {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" + RESET_STYLE)
                 sys.exit(1)
 
-        if key == '0x82' or key == '0x86' or key == '0x87':
+        if key == '0x82' or key == '0x86' or key == '0x87' or key == '0x5c':
             if not is_valid_TN(str(result_dict[key][0])):
                 print(RED_COLOR + f"Wrong Tracking number Format in filed {key} ,"
                                   f" {CODES_MEANING[key[2:]]}, Should be 13 Digits" + RESET_STYLE)
                 sys.exit(1)
 
         # verify Serial number format ####
-        if key == "0x23":
+        if key == "0x23" or key == '0x53' :
             if not is_valid_serial_number(str(result_dict[key][0])):
                 print(RED_COLOR + f"The Config File Include a Wrong Serial number Format\n" + RESET_STYLE)
                 sys.exit(1)
@@ -1453,7 +1453,7 @@ def update_data_dict(recovered_dict):
                         data_ok = False
                         continue
 
-                if selected_key == '0x23':
+                if selected_key == '0x23' or selected_key == '0x53':
                     if not is_valid_serial_number(str(new_data)):
                         print(
                             RED_COLOR + f"Wrong Serial number Format,"
@@ -1473,7 +1473,7 @@ def update_data_dict(recovered_dict):
                     else:
                         data_ok = True
 
-                if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87':
+                if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87' or selected_key == '0x5c':
                     if not is_valid_TN(str(new_data)):
                         print(
                             RED_COLOR + f"Wrong Tracking number Format in filed {selected_key} , "
