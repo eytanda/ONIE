@@ -23,10 +23,8 @@ import re
 from datetime import datetime
 
 
-
-
 # Constants
-SCRIPT_VERSION = 5.43
+SCRIPT_VERSION = 5.44
 
 
 def check_py_ver():
@@ -353,8 +351,8 @@ def get_smbus_device_id(num_of_required_I2C_devices):
         while True:
             try:
                 address = input(YELLOW_COLOR +
-                    "The FRU Data includes more then 256  bytes.\nEnter a second"
-                    " I2C device address in hexadecimal format (e.g., 0x20): " +RESET_STYLE)
+                                "The FRU Data includes more then 256  bytes.\n"
+                                "Enter a second I2C device address in hexadecimal format (e.g., 0x20): " + RESET_STYLE)
                 if address.strip():  # Check if the input is not empty
                     address = int(address, 16)
                     if 0 <= address <= 0x7F:  # Ensure the address is within the valid range
@@ -373,7 +371,8 @@ def get_smbus_device_id(num_of_required_I2C_devices):
     if num_of_required_I2C_devices >= 1:
         while True:
             try:
-                address = input(YELLOW_COLOR + "Enter the I2C device #1 address in hexadecimal format (e.g., 0x20): " + RESET_STYLE)
+                address = input(YELLOW_COLOR + "Enter the I2C device #1 address in hexadecimal format (e.g., 0x20): "
+                                + RESET_STYLE)
                 if address.strip():  # Check if the input is not empty
                     address = int(address, 16)
                     if 0 <= address <= 0x7F:  # Ensure the address is within the valid range
@@ -393,7 +392,8 @@ def get_smbus_device_id(num_of_required_I2C_devices):
         # Prompt for the second I2C device address (optional)
         while True:
             try:
-                address = input(YELLOW_COLOR + "Enter the I2C device #2 address in hexadecimal format (e.g., 0x20): " + RESET_STYLE)
+                address = input(YELLOW_COLOR + "Enter the I2C device #2 address in hexadecimal format (e.g., 0x20): "
+                                + RESET_STYLE)
                 if address.strip():  # Check if the input is not empty
                     address = int(address, 16)
                     if 0 <= address <= 0x7F:  # Ensure the address is within the valid range
@@ -714,7 +714,7 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
     if config_file != 'non':
         print("\n\nPrinting Current Data In FRU\n\n")
         time.sleep(2)
-        print_123(file_name = file_name , read_from_fru=False)
+        print_123(file_name=file_name, read_from_fru=False)
 
 
 def write_to_host_and_bmc_fru(file_name="onie_eeprom", config_file="333"):
@@ -761,7 +761,6 @@ def get_list_of_bin_or_txt_files_in_current_dir(file_type, sub_dir=""):
     for line in output_lines:
         file_name = line.split(" ")[-1]
         if file_name.endswith(file_type):
-            #bin_or_txt_files.append(file_name)
             bin_or_txt_files.append(path + "/" + file_name)
     # print("bin_or_txt_files=", bin_or_txt_files)
     return bin_or_txt_files
@@ -815,21 +814,24 @@ def is_valid_mac_address(mac_address):
 
         """
     # Use a regular expression to check if the MAC address has exactly 12 hex digits
-    #print(mac_address)
     pattern = re.compile(r'^[0-9a-fA-F]{12}$')
     return bool(pattern.match(str(mac_address)))
+
 
 def is_valid_serial_number(serial_number):
     pattern = re.compile(r'^\d{10}$')
     return bool(pattern.match(str(serial_number)))
 
+
 def is_valid_TN(tracking_number):
     pattern = re.compile(r'^\d{13}$')
     return bool(pattern.match(str(tracking_number)))
 
+
 def is_valid_IMEI(IMEI_number):
     pattern = re.compile(r'^\d{15}$')
     return bool(pattern.match(str(IMEI_number)))
+
 
 def is_valid_version(version):
     pattern = re.compile(r'^[0-9a-zA-Z]{4}$')
@@ -849,8 +851,6 @@ def is_valid_datetime(date_string):
         return True
     except ValueError:
         return False
-
-
 
 
 def create_dic(file_name="xxx"):
@@ -878,25 +878,23 @@ def create_dic(file_name="xxx"):
                 key = words[0]
                 if key == '0x25':
                     values = [datetime.now().strftime("%m/%d/%Y %H:%M:%S")]
-                    #values = str(' '.join(values))
-                    #values = values.encode()
 
-                    #print(values)
                 else:
                     data_ok = False
                     while data_ok == False:
-                        values = [input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR +  f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
-                        if key =='0x24':
+                        values = [input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR +
+                                        f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
+                        if key == '0x24':
                             if not is_valid_mac_address(str(values[0])):
-                                print(RED_COLOR + f"Wrong MAC Address Format, Should be 12 chars 0-9 A-F Please try again:\n" +RESET_STYLE)
+                                print(RED_COLOR + f"Wrong MAC Address Format,"
+                                                  f" Should be 12 chars 0-9 A-F Please try again:\n" + RESET_STYLE)
                                 data_ok = False
                                 continue
 
-
-
                         if key == '0x23':
                             if not is_valid_serial_number(str(values[0])):
-                                print(RED_COLOR + f"Wrong Serial number Format, Should be 10 Digits, Please try again:\n" +RESET_STYLE)
+                                print(RED_COLOR + f"Wrong Serial number Format, "
+                                                  f"Should be 10 Digits, Please try again:\n" + RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
@@ -904,26 +902,30 @@ def create_dic(file_name="xxx"):
 
                         if key == '0x27' or key == '0x81':
                             if not is_valid_version(str(values[0])):
-                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" +RESET_STYLE)
+                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]},"
+                                                  f" Should be 4 Characters, Please try again:\n" + RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
-                                data_ok =True
+                                data_ok = True
 
                         if key == '0x2a':
 
-                            if not  1<= int(values[0]) <= 65535:
+                            if not 1 <= int(values[0]) <= 65535:
 
-                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Number must be between 1 and 65535, Please try again:\n" +RESET_STYLE)
+                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]},"
+                                                  f" Number must be between 1 and 65535, "
+                                                  f"Please try again:\n" + RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
-                                data_ok =True
-
+                                data_ok = True
 
                         if key == '0x82' or key == '0x86' or key == '0x87':
                             if not is_valid_TN(str(values[0])):
-                                print(RED_COLOR + f"Wrong Tracking number Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 13 Digits, Please try again:\n" +RESET_STYLE)
+                                print(RED_COLOR + f"Wrong Tracking number Format in filed {key},"
+                                                  f" {CODES_MEANING[key[2:]]},"
+                                                  f" Should be 13 Digits, Please try again:\n" + RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
@@ -932,7 +934,8 @@ def create_dic(file_name="xxx"):
                         if key == "0x83" or key == "0x84":
                             if not is_valid_IMEI(str(values[0])):
                                 print(
-                                    RED_COLOR + f"Wrong IMEI len for {key} , {CODES_MEANING[key[2:]]},  should be 15 char" +RESET_STYLE)
+                                    RED_COLOR + f"Wrong IMEI len for {key} , {CODES_MEANING[key[2:]]},"
+                                                f"  should be 15 char" + RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
@@ -944,9 +947,6 @@ def create_dic(file_name="xxx"):
 
             data_dict[key] = values
 
-            #else:
-            #    print(f"Ignoring invalid line: {line.strip()}")
-    #print(data_dict)
     return data_dict
 
 
@@ -983,7 +983,8 @@ def read_config_file(config_file, burn=False):
 
             if not is_valid_datetime(str(' '.join(result_dict.get("0x25")))):
                 print(
-                    RED_COLOR + f"Wrong DATE Format in filed {key} , {CODES_MEANING[key[2:]]}, Should MM/DD/YYYY HH:NN:SS" + RESET_STYLE)
+                    RED_COLOR + f"Wrong DATE Format in filed {key} , {CODES_MEANING[key[2:]]},"
+                                f" Should MM/DD/YYYY HH:NN:SS" + RESET_STYLE)
                 sys.exit(1)
             else:
                 manufacture_date = str(' '.join(result_dict.get("0x25")))
@@ -994,31 +995,31 @@ def read_config_file(config_file, burn=False):
         if key == '0x27' or key == '0x81':
             if not is_valid_version(str(result_dict[key][0])):
                 print(
-                    RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" + RESET_STYLE)
+                    RED_COLOR + f"Wrong Version Format in filed {key} ,"
+                                f" {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" + RESET_STYLE)
                 sys.exit(1)
 
         if key == '0x82' or key == '0x86' or key == '0x87':
             if not is_valid_TN(str(result_dict[key][0])):
-                print( RED_COLOR + f"Wrong Tracking number Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 13 Digits" + RESET_STYLE)
+                print(RED_COLOR + f"Wrong Tracking number Format in filed {key} ,"
+                                  f" {CODES_MEANING[key[2:]]}, Should be 13 Digits" + RESET_STYLE)
                 sys.exit(1)
 
-        ####################################
-        ### verify Serial number format ####
+        # verify Serial number format ####
         if key == "0x23":
             if not is_valid_serial_number(str(result_dict[key][0])):
                 print(RED_COLOR + f"The Config File Include a Wrong Serial number Format\n" + RESET_STYLE)
                 sys.exit(1)
 
-        ####################################
-        ### verify MAC address format ####
+        # verify MAC address format ####
 
         if key == "0x24":
 
             if not is_valid_mac_address(str(result_dict[key][0])):
-                print(RED_COLOR + f"The Config File Include a Wrong MAC Address Format\n" +RESET_STYLE)
+                print(RED_COLOR + f"The Config File Include a Wrong MAC Address Format\n" + RESET_STYLE)
                 sys.exit(1)
 
-        #### number of MAC - convert to hex and set it as 2  bytes
+        # number of MAC - convert to hex and set it as 2  bytes
         if key == '0x2a':
             value = result_dict.get(key)
             value = int(value[0])
@@ -1037,23 +1038,22 @@ def read_config_file(config_file, burn=False):
                 fru_data_list.append(binary_value_key + hex_len.to_bytes(1, "big") + hex_representation)
 
                 # Update the length of the code leng byte + new data
-                new_data_len += 2 + len((hex_representation))
+                new_data_len += 2 + len(hex_representation)
                 continue
 
             else:
                 print("Error: Number must be between 1 and 65535.")
                 sys.exit(1)
 
-
-        if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84" :
+        if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84":
             # all other FD values that are hex
             value = (result_dict.get(key))
             value = value[0]
             if key == "0x83" or key == "0x84":
-                #if len(value) != 15:
                 if not is_valid_IMEI(str(result_dict[key][0])):
 
-                    print(RED_COLOR + f"Wrong IMEI len for {key} , {CODES_MEANING[key[2:]]},  should be 15 char actual {len(value)}")
+                    print(RED_COLOR + f"Wrong IMEI len for {key} ,"
+                                      f" {CODES_MEANING[key[2:]]},  should be 15 char actual {len(value)}")
                     sys.exit(1)
                 else:
                     value = value.zfill(16)
@@ -1094,8 +1094,6 @@ def read_config_file(config_file, burn=False):
     new_data_len = int(new_data_len)
     fru_data_list[2] = new_data_len.to_bytes(2, "big")
     fru_data = b"".join(fru_data_list)
-    #print(fru_data)
-    #time.sleep(10)
     # create backup file with all the data ()
     if not os.path.isdir("FRU_Backup_files"):
         os.mkdir("FRU_Backup_files")
@@ -1160,7 +1158,6 @@ def ask_what_to_do_and_call_the_right_func():
     if what_to_do == "7":  # create a file of the fru
         output_file_name = output_fru_data_to_bin_file(file_name="take system time")
         print(GREEN_COLOR + "FRU Data Has Been Dumped To '%s'" % output_file_name, RESET_STYLE_BLACK_BG)
-        #print_config_fru_file_data(verbose=True, file_name=output_file_name, read_from_fru=False, config_file='ccc')
         print_123(file_name=output_file_name, read_from_fru=False)
 
         return True
@@ -1174,7 +1171,7 @@ def ask_what_to_do_and_call_the_right_func():
         recoverd_dict = print_123(file_name=output_file_name, read_from_fru=False)
         new_dict = update_data_dict(recoverd_dict)
         file_path = backup_config_file(new_dict)
-        print(GREEN_COLOR + "     ***** Burning the FRU With The Newly Modified Fields *****" + RESET_STYLE )
+        print(GREEN_COLOR + "\n\n     ***** Burning the FRU With The Newly Modified Fields *****\n" + RESET_STYLE)
         os_clear = False
         read_config_file(file_path, True)
 
@@ -1345,7 +1342,6 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
 
             len_of_current_field_decimal = int(len_of_current_field_hex, 16)
 
-
         else:
             print(RED_COLOR + "EEPROM data isn't valid" + RESET_STYLE_BLACK_BG)
             time.sleep(3)
@@ -1356,7 +1352,6 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
             field_data = data[index:index + len_of_current_field_decimal]
             index += len_of_current_field_decimal
             if code == "24" or code == "54" or code == "83" or code == "84":
-                #print(RED_COLOR +f"the code=", code + RESET_STYLE)
                 if verbose:
                     print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
                     if code == '83':
@@ -1370,9 +1365,7 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
             elif code == "2a":
                 field_data = field_data.hex().upper()
                 field_data = int(field_data, 16)
-                #print("field_data=", field_data)
-                #while field_data.startswith("0"):
-                    #field_data = field_data[1:]
+
                 if verbose:
                     field_data_str = str(field_data)  # Convert integer to string
                     print(field_data_str + " " * (32 - (len(field_data_str))) + "|")
@@ -1390,8 +1383,6 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
             elif code == "fe":
                 if verbose:
                     print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
-                    #recover_dict.update({code: field_data.hex().upper()})
-
 
                 else:
                     codes_data.append(field_data.hex().upper())
@@ -1400,7 +1391,6 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
                 break
             else:
                 if verbose:
-                    #print(field_data)
                     print(field_data.decode() + " " * (32 - len(field_data.decode())) + "|")
                     recover_dict.update({code: field_data.decode()})
 
@@ -1422,7 +1412,8 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
             print("Checksum should be %s\n" % hex(checksum_should_be)[2:].upper() +
                   GREEN_COLOR + "%s" % is_checksum_correct + RESET_STYLE_BLACK_BG)
 
-    return  recover_dict
+    return recover_dict
+
 
 def backup_config_file(data_dict):
     file_name = "fru_" + datetime.now().strftime("%m.%d.%Y__%H_%M_%S") + "_backup" + ".txt"
@@ -1438,55 +1429,56 @@ def update_data_dict(recovered_dict):
 
     # add 0x to the keys
     data_dict = {f"0x{key}": value for key, value in recovered_dict.items()}
-    #print("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-    #print(data_dict)
+
     while True:
         # Ask the user which field to change
         #for key in data_dict.keys():
         #    print(key, end=' ')
-        selected_key = input(YELLOW_COLOR + "Please select the code from the provided table for the field you'd like to modify:" + RESET_STYLE)
+        selected_key = input(YELLOW_COLOR + "Please select the code from the provided table"
+                                            " for the field you'd like to modify:" + RESET_STYLE)
         selected_key = "0x" + selected_key.zfill(2)  # Add "0x" and ensure 2-digit format
 
         # Check if the selected key exists
         if selected_key in data_dict:
-            #new_data = input("Enter the new data: ")
 
             data_ok = False
             while data_ok == False:
-                new_data = input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR + f" {CODES_MEANING[selected_key[2:]]}" + RESET_STYLE)
+                new_data = input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR +
+                                 f" {CODES_MEANING[selected_key[2:]]}" + RESET_STYLE)
                 if selected_key == '0x24':
-                    #print(str(new_data))
                     if not is_valid_mac_address(str(new_data)):
                         print(
-                            RED_COLOR + f"Wrong MAC Address Format, Should be 12 chars 0-9 A-F Please try again:\n" + RESET_STYLE)
+                            RED_COLOR + f"Wrong MAC Address Format,"
+                                        f" Should be 12 chars 0-9 A-F Please try again:\n" + RESET_STYLE)
                         data_ok = False
                         continue
 
                 if selected_key == '0x23':
                     if not is_valid_serial_number(str(new_data)):
                         print(
-                            RED_COLOR + f"Wrong Serial number Format, Should be 10 Digits, Please try again:\n" + RESET_STYLE)
+                            RED_COLOR + f"Wrong Serial number Format,"
+                                        f" Should be 10 Digits, Please try again:\n" + RESET_STYLE)
                         data_ok = False
                         continue
                     else:
                         data_ok = True
-
-
 
                 if selected_key == '0x2a':
-                    if not 1<= int(new_data) <= 65535:
+                    if not 1 <= int(new_data) <= 65535:
                         print(
-                            RED_COLOR + f"Wrong Format in filed {selected_key} , {CODES_MEANING[selected_key[2:]]}, Number must be between 1 and 65535, Please try again:\n" + RESET_STYLE)
+                            RED_COLOR + f"Wrong Format in filed {selected_key} , {CODES_MEANING[selected_key[2:]]},"
+                                        f" Number must be between 1 and 65535, Please try again:\n" + RESET_STYLE)
                         data_ok = False
                         continue
                     else:
                         data_ok = True
-
 
                 if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87':
                     if not is_valid_TN(str(new_data)):
                         print(
-                            RED_COLOR + f"Wrong Tracking number Format in filed {selected_key} , {CODES_MEANING[selected_key[2:]]}, Should be 13 Digits, Please try again:\n" + RESET_STYLE)
+                            RED_COLOR + f"Wrong Tracking number Format in filed {selected_key} , "
+                                        f"{CODES_MEANING[selected_key[2:]]}, Should be 13 Digits,"
+                                        f" Please try again:\n" + RESET_STYLE)
                         data_ok = False
                         continue
                     else:
@@ -1495,7 +1487,8 @@ def update_data_dict(recovered_dict):
                 if selected_key == "0x83" or selected_key == "0x84":
                     if not is_valid_IMEI(str(new_data)):
                         print(
-                            RED_COLOR + f"Wrong IMEI len for {selected_key} , {CODES_MEANING[selected_key[2:]]},  should be 15 char" + RESET_STYLE)
+                            RED_COLOR + f"Wrong IMEI len for {selected_key} ,"
+                                        f" {CODES_MEANING[selected_key[2:]]},  should be 15 char" + RESET_STYLE)
                         data_ok = False
                         continue
                     else:
@@ -1505,7 +1498,6 @@ def update_data_dict(recovered_dict):
 
             # Update the data in the dictionary
             data_dict[selected_key] = new_data
-            #print(data_dict)
 
         else:
             print(RED_COLOR + "Selected key does not exist in the file. Please try again." + RESET_STYLE)
@@ -1514,6 +1506,7 @@ def update_data_dict(recovered_dict):
         if update_more != "yes":
             break
     return data_dict
+
 
 def main():
     try:
