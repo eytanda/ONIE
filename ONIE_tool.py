@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.45
+SCRIPT_VERSION = 5.46
 
 
 def check_py_ver():
@@ -1141,7 +1141,7 @@ def ask_what_to_do_and_call_the_right_func():
                        "5. Display Hex output of the Data Stored In The Fru\n"
                        "6. Display Hex output of Data stored In a Backup Bin File \n"
                        "7. Create a Bin File From The Data Stored In The FRU)\n"
-                       "8. Change a filed on the HOST Fru\n\n" 
+                       "8. Change a field on the HOST Fru\n\n" 
 
 
                        "Mode = ")
