@@ -26,7 +26,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.42
+SCRIPT_VERSION = 5.43
 
 
 def check_py_ver():
@@ -324,15 +324,14 @@ def get_i2c_bus_number_and_enable_access():
         exit()
     else:
         print("There Is More Then 1 Active I2C Bus.\n"
-              "Please Chose The Desired Address.\n"
               "Available Addresses:\n"
               "[%s]" % ", ".join(map(str, i2c_addresses)))
-        chosen_i2c_address = input("Address: ")
+        chosen_i2c_address = input(YELLOW_COLOR + "Please Chose The Desired BUS Address:" + RESET_STYLE)
         try:
             chosen_i2c_address = int(chosen_i2c_address)
         except Exception as err:
             print(RED_COLOR + "PLease Enter Only Numbers." + RESET_STYLE_BLACK_BG)
-            chosen_i2c_address = input("Address: ")
+            chosen_i2c_address = input(YELLOW_COLOR + "Please Chose The Desired BUS Address:" + RESET_STYLE)
         while chosen_i2c_address not in i2c_addresses:
             print("Please Look Above For Active I2C Busses.\n")
             chosen_i2c_address = input("Address: ")
@@ -353,9 +352,9 @@ def get_smbus_device_id(num_of_required_I2C_devices):
     if num_of_required_I2C_devices == 3:
         while True:
             try:
-                address = input(
-                    "The FRU Data includes more then 256  bytes. Enter a second"
-                    " I2C device address in hexadecimal format (e.g., 0x20): ")
+                address = input(YELLOW_COLOR +
+                    "The FRU Data includes more then 256  bytes.\nEnter a second"
+                    " I2C device address in hexadecimal format (e.g., 0x20): " +RESET_STYLE)
                 if address.strip():  # Check if the input is not empty
                     address = int(address, 16)
                     if 0 <= address <= 0x7F:  # Ensure the address is within the valid range
@@ -374,7 +373,7 @@ def get_smbus_device_id(num_of_required_I2C_devices):
     if num_of_required_I2C_devices >= 1:
         while True:
             try:
-                address = input("Enter the I2C device #1 address in hexadecimal format (e.g., 0x20): ")
+                address = input(YELLOW_COLOR + "Enter the I2C device #1 address in hexadecimal format (e.g., 0x20): " + RESET_STYLE)
                 if address.strip():  # Check if the input is not empty
                     address = int(address, 16)
                     if 0 <= address <= 0x7F:  # Ensure the address is within the valid range
@@ -394,7 +393,7 @@ def get_smbus_device_id(num_of_required_I2C_devices):
         # Prompt for the second I2C device address (optional)
         while True:
             try:
-                address = input("Enter the I2C device #2 address in hexadecimal format (e.g., 0x20): ")
+                address = input(YELLOW_COLOR + "Enter the I2C device #2 address in hexadecimal format (e.g., 0x20): " + RESET_STYLE)
                 if address.strip():  # Check if the input is not empty
                     address = int(address, 16)
                     if 0 <= address <= 0x7F:  # Ensure the address is within the valid range
@@ -790,8 +789,8 @@ def print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type, sub_dir):
     print("\n\n")
     ok = False
     while not ok:
-        file_number = input("Please Enter The Desired Number Of The File.\n"
-                            "Number Of The File: ")
+        file_number = input(YELLOW_COLOR + "Please Enter The Desired File Number: " + RESET_STYLE)
+
         if len(files) >= int(file_number) and file_number in files_index_list:
             file_name = files[int(file_number) - 1]
             ok = True
@@ -886,7 +885,7 @@ def create_dic(file_name="xxx"):
                 else:
                     data_ok = False
                     while data_ok == False:
-                        values = [input(f"Enter Data for the " + GREEN_COLOR +  f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
+                        values = [input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR +  f" {CODES_MEANING[key[2:]]}" + RESET_STYLE)]
                         if key =='0x24':
                             if not is_valid_mac_address(str(values[0])):
                                 print(RED_COLOR + f"Wrong MAC Address Format, Should be 12 chars 0-9 A-F Please try again:\n" +RESET_STYLE)
@@ -906,6 +905,16 @@ def create_dic(file_name="xxx"):
                         if key == '0x27' or key == '0x81':
                             if not is_valid_version(str(values[0])):
                                 print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" +RESET_STYLE)
+                                data_ok = False
+                                continue
+                            else:
+                                data_ok =True
+
+                        if key == '0x2a':
+
+                            if not  1<= int(values[0]) <= 65535:
+
+                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]}, Number must be between 1 and 65535, Please try again:\n" +RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
@@ -947,7 +956,7 @@ def read_config_file(config_file, burn=False):
         :type: file_name:
             :rtype: str
     """
-
+    global os_clear
     if os_clear:
         os.system("clear")
     if config_file.endswith(".bin"):
@@ -971,7 +980,8 @@ def read_config_file(config_file, burn=False):
             break
 
         if key == "0x25":
-            if not is_valid_datetime(str(result_dict[key][0])):
+
+            if not is_valid_datetime(str(' '.join(result_dict.get("0x25")))):
                 print(
                     RED_COLOR + f"Wrong DATE Format in filed {key} , {CODES_MEANING[key[2:]]}, Should MM/DD/YYYY HH:NN:SS" + RESET_STYLE)
                 sys.exit(1)
@@ -1008,8 +1018,34 @@ def read_config_file(config_file, burn=False):
                 print(RED_COLOR + f"The Config File Include a Wrong MAC Address Format\n" +RESET_STYLE)
                 sys.exit(1)
 
+        #### number of MAC - convert to hex and set it as 2  bytes
+        if key == '0x2a':
+            value = result_dict.get(key)
+            value = int(value[0])
+            if 1 <= value <= 65535:
+                # Convert the number to hexadecimal and represent it as a 2-byte number
+                hex_representation = value.to_bytes(2, byteorder='big')
 
-        if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84":
+                # Convert the key to bytes
+                hex_value_key = int(key, 16)
+                binary_value_key = bytes([hex_value_key])
+
+                # Get the length of the hexadecimal representation
+                hex_len = len(hex_representation)
+
+                # Append the binary key, length, and hexadecimal representation to the fru_data_list
+                fru_data_list.append(binary_value_key + hex_len.to_bytes(1, "big") + hex_representation)
+
+                # Update the length of the code leng byte + new data
+                new_data_len += 2 + len((hex_representation))
+                continue
+
+            else:
+                print("Error: Number must be between 1 and 65535.")
+                sys.exit(1)
+
+
+        if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84" :
             # all other FD values that are hex
             value = (result_dict.get(key))
             value = value[0]
@@ -1033,7 +1069,7 @@ def read_config_file(config_file, burn=False):
             new_data_len += 2 + (len(value) / 2)
             continue
 
-        # All other keys that are ASCII
+        # All other keys that are ASCIIe
         value = (result_dict.get(key))
         value = value[0]
         # convert key to integer and interpreting it as a hexadecimal number
@@ -1058,6 +1094,8 @@ def read_config_file(config_file, burn=False):
     new_data_len = int(new_data_len)
     fru_data_list[2] = new_data_len.to_bytes(2, "big")
     fru_data = b"".join(fru_data_list)
+    #print(fru_data)
+    #time.sleep(10)
     # create backup file with all the data ()
     if not os.path.isdir("FRU_Backup_files"):
         os.mkdir("FRU_Backup_files")
@@ -1095,6 +1133,7 @@ def read_config_file(config_file, burn=False):
 
 def ask_what_to_do_and_call_the_right_func():
     """ asks the user what to do """
+    global os_clear
     print(CYAN_COLOR + "Script Version: '%s'" % SCRIPT_VERSION + RESET_STYLE_BLACK_BG)
 
     what_to_do = input("1. Create a Bin File Based On fru_config.txt File data\n"
@@ -1103,7 +1142,8 @@ def ask_what_to_do_and_call_the_right_func():
                        "4. Program a Bin File To Host Fru\n"
                        "5. Display Hex output of the Data Stored In The Fru\n"
                        "6. Display Hex output of Data stored In a Backup Bin File \n"
-                       "7. Create a Bin File From The Data Stored In The FRU)\n\n"
+                       "7. Create a Bin File From The Data Stored In The FRU)\n"
+                       "8. Change a filed on the HOST Fru\n\n" 
 
 
                        "Mode = ")
@@ -1127,6 +1167,17 @@ def ask_what_to_do_and_call_the_right_func():
     elif what_to_do == "3":  # print fru data of desired file
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
         print_123(file_name=file_name, read_from_fru=False)
+        return True
+    elif what_to_do == "8":  # print fru data of desired file
+        print(CYAN_COLOR + f"Reading The Current DATA Stored In The FRU\n" + RESET_STYLE)
+        output_file_name = output_fru_data_to_bin_file(file_name="take system time")
+        recoverd_dict = print_123(file_name=output_file_name, read_from_fru=False)
+        new_dict = update_data_dict(recoverd_dict)
+        file_path = backup_config_file(new_dict)
+        print(GREEN_COLOR + "     ***** Burning the FRU With The Newly Modified Fields *****" + RESET_STYLE )
+        os_clear = False
+        read_config_file(file_path, True)
+
         return True
     elif what_to_do == "4":  # program desired file to host fru
         file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='bin', sub_dir='/FRU_Backup_files')
@@ -1308,15 +1359,23 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
                 #print(RED_COLOR +f"the code=", code + RESET_STYLE)
                 if verbose:
                     print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
-                    recover_dict.update({code: field_data.hex().upper()})
+                    if code == '83':
+                        IMEI = field_data.hex().upper()
+                        IMEI_fixed = IMEI[1:]
+                        recover_dict.update({code: IMEI_fixed})
+                    else:
+                        recover_dict.update({code: field_data.hex().upper()})
                 else:
                     codes_data.append(field_data.hex().upper())
             elif code == "2a":
                 field_data = field_data.hex().upper()
-                while field_data.startswith("0"):
-                    field_data = field_data[1:]
+                field_data = int(field_data, 16)
+                #print("field_data=", field_data)
+                #while field_data.startswith("0"):
+                    #field_data = field_data[1:]
                 if verbose:
-                    print(field_data + " " * (32 - len(field_data)) + "|")
+                    field_data_str = str(field_data)  # Convert integer to string
+                    print(field_data_str + " " * (32 - (len(field_data_str))) + "|")
                     recover_dict.update({code: field_data})
                 else:
                     codes_data.append(field_data)
@@ -1331,7 +1390,7 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
             elif code == "fe":
                 if verbose:
                     print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
-                    recover_dict.update({code: field_data.hex().upper()})
+                    #recover_dict.update({code: field_data.hex().upper()})
 
 
                 else:
@@ -1362,14 +1421,99 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
         else:
             print("Checksum should be %s\n" % hex(checksum_should_be)[2:].upper() +
                   GREEN_COLOR + "%s" % is_checksum_correct + RESET_STYLE_BLACK_BG)
-    #print(recover_dict)
-    #print("##############\n")
 
-    #print(codes)
-    #print("##############\n")
-    #print(codes_data)
-    return codes, codes_data
+    return  recover_dict
 
+def backup_config_file(data_dict):
+    file_name = "fru_" + datetime.now().strftime("%m.%d.%Y__%H_%M_%S") + "_backup" + ".txt"
+    file_path = os.path.join("FRU_Backup_files", file_name)
+
+    with open(file_path, "w") as file:
+        for key, data in data_dict.items():
+            file.write(f"{key}  {data}\n")
+    return file_path
+
+
+def update_data_dict(recovered_dict):
+
+    # add 0x to the keys
+    data_dict = {f"0x{key}": value for key, value in recovered_dict.items()}
+    #print("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
+    #print(data_dict)
+    while True:
+        # Ask the user which field to change
+        #for key in data_dict.keys():
+        #    print(key, end=' ')
+        selected_key = input(YELLOW_COLOR + "Please select the code from the provided table for the field you'd like to modify:" + RESET_STYLE)
+        selected_key = "0x" + selected_key.zfill(2)  # Add "0x" and ensure 2-digit format
+
+        # Check if the selected key exists
+        if selected_key in data_dict:
+            #new_data = input("Enter the new data: ")
+
+            data_ok = False
+            while data_ok == False:
+                new_data = input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR + f" {CODES_MEANING[selected_key[2:]]}" + RESET_STYLE)
+                if selected_key == '0x24':
+                    #print(str(new_data))
+                    if not is_valid_mac_address(str(new_data)):
+                        print(
+                            RED_COLOR + f"Wrong MAC Address Format, Should be 12 chars 0-9 A-F Please try again:\n" + RESET_STYLE)
+                        data_ok = False
+                        continue
+
+                if selected_key == '0x23':
+                    if not is_valid_serial_number(str(new_data)):
+                        print(
+                            RED_COLOR + f"Wrong Serial number Format, Should be 10 Digits, Please try again:\n" + RESET_STYLE)
+                        data_ok = False
+                        continue
+                    else:
+                        data_ok = True
+
+
+
+                if selected_key == '0x2a':
+                    if not 1<= int(new_data) <= 65535:
+                        print(
+                            RED_COLOR + f"Wrong Format in filed {selected_key} , {CODES_MEANING[selected_key[2:]]}, Number must be between 1 and 65535, Please try again:\n" + RESET_STYLE)
+                        data_ok = False
+                        continue
+                    else:
+                        data_ok = True
+
+
+                if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87':
+                    if not is_valid_TN(str(new_data)):
+                        print(
+                            RED_COLOR + f"Wrong Tracking number Format in filed {selected_key} , {CODES_MEANING[selected_key[2:]]}, Should be 13 Digits, Please try again:\n" + RESET_STYLE)
+                        data_ok = False
+                        continue
+                    else:
+                        data_ok = True
+
+                if selected_key == "0x83" or selected_key == "0x84":
+                    if not is_valid_IMEI(str(new_data)):
+                        print(
+                            RED_COLOR + f"Wrong IMEI len for {selected_key} , {CODES_MEANING[selected_key[2:]]},  should be 15 char" + RESET_STYLE)
+                        data_ok = False
+                        continue
+                    else:
+                        data_ok = True
+
+                data_ok = True
+
+            # Update the data in the dictionary
+            data_dict[selected_key] = new_data
+            #print(data_dict)
+
+        else:
+            print(RED_COLOR + "Selected key does not exist in the file. Please try again." + RESET_STYLE)
+
+        update_more = input(YELLOW_COLOR + "Do you want to update another key? (yes/no): " + RESET_STYLE).lower()
+        if update_more != "yes":
+            break
+    return data_dict
 
 def main():
     try:
@@ -1389,11 +1533,11 @@ def main():
 
 def menu_or_exit():
     """ Asks The User If He/She Wants To Go Back To The Menu Or Exit """
-    what_to_do2 = input("Type 'm' To Go Back To Menu.\n"
-                        "Type 'e' To Exit.\n")
+    what_to_do2 = input(YELLOW_COLOR + "Type 'm' To Go Back To Menu.\n"
+                        "Type 'e' To Exit.\n" + RESET_STYLE)
     while what_to_do2 not in ["m", "e"]:
-        what_to_do2 = input("Type 'm' To Go Back To Menu.\n"
-                            "Type 'e' To Exit.\n")
+        what_to_do2 = input(YELLOW_COLOR + "Type 'm' To Go Back To Menu.\n"
+                            "Type 'e' To Exit.\n" + RESET_STYLE)
     if what_to_do2 == "m":
         if os_clear:
             os.system("clear")
