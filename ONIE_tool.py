@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.44
+SCRIPT_VERSION = 5.45
 
 
 def check_py_ver():
@@ -1295,7 +1295,7 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
         exit()
     if verbose:
         print("-" * 73)
-        print(" " * 3 + "Code Meaning" + " " * 6 + "|     " + "Code" + "     |" + " " * 9 + "Data" + " " * 23 + "|")
+        print(" " * 3 + "Code Meaning" + " " * 7 + "|     " + "Code" + "     |" + " " * 9 + "Data" + " " * 24 + "|")
         print()
     while index - 8 - 1 - 2 < data_len:
         code = data[index:index + 1].hex()
@@ -1311,9 +1311,9 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
             if code == "fd":  # if code == "fd" add row space
                 print()
             print(code_meaning, end="")
-            print(" " * (21 - len(code_meaning)), end="|      ")
+            print(" " * (22 - len(code_meaning)), end="|      ")
             print(code, end="")
-            print(" " * 6, end="|    ")
+            print(" " * 7, end="|    ")
             if code == "fd":  # if code == "fd" skip data in this row as the data will be printed in multiple rows
                 print(" " * 22 + "|\n")
         else:
