@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.49
+SCRIPT_VERSION = 5.5
 
 
 def check_py_ver():
@@ -609,7 +609,7 @@ def print_fru_file_in_hex(file_name="onie_eeprom", read_from_fru=True):
     print("".join(data_list_in_ascii))
 
 
-def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
+def write_to_host_fru(file_name='non', fru_data='', config_file="non", actual_mem_size =512):
     """
     Write Data To Host FRU
     :param fru_data: the data to write to the FRU
@@ -619,7 +619,7 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
     global smbus_device_id2
     global i2c_bus_number
     get_i2c_bus_number_and_enable_access()
-    if len(fru_data) <= 256:
+    if len(fru_data) <= 256 and actual_mem_size == 256:
         mem_size_required = 256
         smbus_device_id1, smbus_device_id2 = get_smbus_device_id(1)
     else:
