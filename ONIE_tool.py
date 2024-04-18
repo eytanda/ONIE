@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.48
+SCRIPT_VERSION = 5.49
 
 
 def check_py_ver():
@@ -854,6 +854,11 @@ def is_valid_datetime(date_string):
 
 
 def create_dic(file_name="xxx"):
+    """
+
+    :param file_name:
+    :return:
+    """
     data_dict = OrderedDict()
 
     with open(file_name, 'r') as file:
@@ -876,8 +881,21 @@ def create_dic(file_name="xxx"):
                 values = words[1:]
             else:
                 key = words[0]
-                if key == '0x25':
-                    values = [datetime.now().strftime("%m/%d/%Y %H:%M:%S")]
+                if key == '0x25' or key == '0x54':
+                    if key == '0x25':
+                        values = [datetime.now().strftime("%m/%d/%Y %H:%M:%S")]
+
+
+                    # UUID
+                    if key == '0x54':
+                        uuid_bytes = subprocess.check_output(["uuidgen", "-r"])
+                        # Decode bytes to string and remove hyphens
+                        values = [uuid_bytes.decode().strip().replace("-", "")]
+                        #print("UUID =", values)
+
+
+
+
 
                 else:
                     data_ok = False
@@ -946,6 +964,7 @@ def create_dic(file_name="xxx"):
                 # Add key-value pair to the OrderedDict
 
             data_dict[key] = values
+    #print(data_dict)
 
     return data_dict
 
@@ -1169,11 +1188,14 @@ def ask_what_to_do_and_call_the_right_func():
         print(CYAN_COLOR + f"Reading The Current DATA Stored In The FRU\n" + RESET_STYLE)
         output_file_name = output_fru_data_to_bin_file(file_name="take system time")
         recoverd_dict = print_123(file_name=output_file_name, read_from_fru=False)
-        new_dict = update_data_dict(recoverd_dict)
-        file_path = backup_config_file(new_dict)
-        print(GREEN_COLOR + "\n\n     ***** Burning the FRU With The Newly Modified Fields *****\n" + RESET_STYLE)
-        os_clear = False
-        read_config_file(file_path, True)
+        new_dict, burn = update_data_dict(recoverd_dict)
+        if burn:
+            file_path = backup_config_file(new_dict)
+            print(GREEN_COLOR + "\n\n     ***** Burning the FRU With The Newly Modified Fields *****\n" + RESET_STYLE)
+            os_clear = False
+            read_config_file(file_path, True)
+        else:
+            print(GREEN_COLOR + "No Field Was Modified ")
 
         return True
     elif what_to_do == "4":  # program desired file to host fru
@@ -1426,7 +1448,11 @@ def backup_config_file(data_dict):
 
 
 def update_data_dict(recovered_dict):
-
+    """
+    THis function is used in case that the user would like to change a specific value within the FRU
+    :param recovered_dict:
+    :return:
+    """
     # add 0x to the keys
     data_dict = {f"0x{key}": value for key, value in recovered_dict.items()}
 
@@ -1439,12 +1465,19 @@ def update_data_dict(recovered_dict):
         selected_key = "0x" + selected_key.zfill(2)  # Add "0x" and ensure 2-digit format
 
         # Check if the selected key exists
-        if selected_key in data_dict:
+        if (selected_key in data_dict) and (selected_key != '0x54'):
 
             data_ok = False
             while data_ok == False:
+
+
+
                 new_data = input(YELLOW_COLOR + f"Enter Data for the " + RESET_STYLE + GREEN_COLOR +
                                  f" {CODES_MEANING[selected_key[2:]]}" + RESET_STYLE)
+
+
+
+
                 if selected_key == '0x24':
                     if not is_valid_mac_address(str(new_data)):
                         print(
@@ -1473,6 +1506,8 @@ def update_data_dict(recovered_dict):
                     else:
                         data_ok = True
 
+
+
                 if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87' or selected_key == '0x5c':
                     if not is_valid_TN(str(new_data)):
                         print(
@@ -1498,14 +1533,23 @@ def update_data_dict(recovered_dict):
 
             # Update the data in the dictionary
             data_dict[selected_key] = new_data
+            burn = True
 
         else:
-            print(RED_COLOR + "Selected key does not exist in the file. Please try again." + RESET_STYLE)
+            # UUID
+            if selected_key == '0x54':
+                print(
+                    RED_COLOR + f"UUID is a system-generated field. Kindly choose an alternative code to modify:\n" + RESET_STYLE)
+                burn = False
+            else:
+                print(RED_COLOR + "Selected key does not exist in the file. Please try again." + RESET_STYLE)
+
+
 
         update_more = input(YELLOW_COLOR + "Do you want to update another key? (yes/no): " + RESET_STYLE).lower()
         if update_more != "yes":
             break
-    return data_dict
+    return data_dict, burn
 
 
 def main():
