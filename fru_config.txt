@@ -1,59 +1,30 @@
-#####################
-#### config file
-#### In case that no dat is entered, the program will ask the user to enter value
-#### In case that no date is enetered for filed 0x25 , it will use the current date and time
-
-
-# product name
-0x21 DU-ICXSP-ES0
-# Part number
-0x22 90500-0169-E6
-# Serial Number (10 digits)
-0x23
-# MAC
-0x24 00E0EDF0A0FC
-# Manufacture Date  MM/DD/YYYY HH:NN:SS
-0x25
-# Label Revision
-0x27 R002
-# Number Of MACs
-0x2a 29
-# Manufacturer
-0x2b BILICOM
-# Country Code
+0x21 Seville
+0x22 90500-0171-G00
+0x23 1234567890
+0x24 00E0ED123456
+#######################################################################################
+#### Leave the 0x25 code devoid of value, the utility add the Host current date and time
+0x25  
+#######################################################################################
+0x27 R101
+0x2a 120
+0x2b Silicom
 0x2c IL
-# vendor
-0x2d BILICOM
-#silicom_onie_version  R002 ASCII 4
-0x81 R002
-#TNB 1234567891234   ASCII 13
-0x82 1234567891234
-#IMEI1 15 Char  (HEX) 
-0x83   123456789123456 
-#TNB2
-0x85 1234567891234 
-
-
-
-
-
-
-
-
-
-
-
-#################################################################################################
-#
-#
-#                     FD section
-#
-#
-################################################################################################
-
-# vendor_extension  default:  be b"\xfd"
-# 0xfd  b"\xfd"
-# IANA_CODE_OF_SILICOM  default: b"\x00\x00\x3d\x4e"
-# IANA_CODE_OF_SILICOM  b"\x00\x00\x3d\x4e"
-# 0x81 b"\x00\x00\x3d\x4e"
-# silicom_onie_version (ASCII format , 4 bytes example: R002)
+0x2d Silicom
+0x51 Silicom
+0x52 90500-0171-G00
+0x53 0123456789
+#########################################################################
+####-Leave the 0x54 devoid of value the utility calculate the UUID value
+0x54
+#########################################################################
+0x55 R101
+0x58 00
+0x59 Silicom
+0x5a 90300-0171-G00
+0x5b R100
+0x5c 1234567890123
+0x5e Silicom
+0x81 R001
+0x82 123456789012R
+0x83 123456789012312

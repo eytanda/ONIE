@@ -1,4 +1,4 @@
-#!/usr/bin/python3.6
+#!/usr/bin/python3
 """
 author: Eytan Dagry
 mail: eytan@silicom.co.il
@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.5
+SCRIPT_VERSION = 5.51
 
 
 def check_py_ver():
@@ -178,6 +178,7 @@ ALLOWED_CHARS += [chr(num) for num in range(123, 127)]  # more sings
 # Globals
 i2c_bus_number = None
 os_clear = True
+
 
 
 def pip_check_if_package_installed_and_install_if_not(name_of_package):
@@ -609,7 +610,7 @@ def print_fru_file_in_hex(file_name="onie_eeprom", read_from_fru=True):
     print("".join(data_list_in_ascii))
 
 
-def write_to_host_fru(file_name='non', fru_data='', config_file="non", actual_mem_size =512):
+def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
     """
     Write Data To Host FRU
     :param fru_data: the data to write to the FRU
@@ -618,13 +619,19 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non", actual_me
     global smbus_device_id1
     global smbus_device_id2
     global i2c_bus_number
+    global actual_mem_size
     get_i2c_bus_number_and_enable_access()
     if len(fru_data) <= 256 and actual_mem_size == 256:
         mem_size_required = 256
         smbus_device_id1, smbus_device_id2 = get_smbus_device_id(1)
     else:
-        mem_size_required = 512
-        smbus_device_id1, smbus_device_id2 = get_smbus_device_id(2)
+        if len(fru_data) > 256 and actual_mem_size == 256:
+            print(RED_COLOR + f"The FRU Data includes more then 256 but the actual_mem_size defined in the fru_config"
+                          f" file is {actual_mem_size}. Please fix and try again." + RESET_STYLE)
+            sys.exit(1)
+        else:
+            mem_size_required = 512
+            smbus_device_id1, smbus_device_id2 = get_smbus_device_id(2)
     # open smbus to the i2c_bus_number
     bus = SMBus(i2c_bus_number)
     print(GREEN_COLOR + "Starting To Write To HOST FRU" + RESET_STYLE_BLACK_BG + "\n")
@@ -696,9 +703,10 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non", actual_me
                         print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
                         ok = True
                     else:
-                        bus.write_byte_data(smbus_device_id2, i, 255)
-                        print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
-                        ok = True
+                        if actual_mem_size == 512:
+                            bus.write_byte_data(smbus_device_id2, i, 255)
+                            print(ALL_COLORS[random.randint(0, len(ALL_COLORS) - 1)] + "-" + RESET_STYLE_BLACK_BG, end="")
+                            ok = True
                 except Exception as err:
                     with open("errors.log", "a") as errors_file:
                         errors_file.write(traceback.format_exc() + "\n")
@@ -859,6 +867,9 @@ def create_dic(file_name="xxx"):
     :param file_name:
     :return:
     """
+    global actual_mem_size
+    actual_mem_size = 512
+
     data_dict = OrderedDict()
 
     with open(file_name, 'r') as file:
@@ -892,6 +903,8 @@ def create_dic(file_name="xxx"):
                         # Decode bytes to string and remove hyphens
                         values = [uuid_bytes.decode().strip().replace("-", "")]
                         #print("UUID =", values)
+
+
 
 
 
@@ -964,6 +977,11 @@ def create_dic(file_name="xxx"):
                 # Add key-value pair to the OrderedDict
 
             data_dict[key] = values
+            if key == 'actual_mem_size':
+                actual_mem_size = int(values [0])
+                print(values)
+                data_dict.pop('actual_mem_size')
+                print("actual_mem_size=", actual_mem_size)
     #print(data_dict)
 
     return data_dict
@@ -1628,10 +1646,9 @@ if __name__ == '__main__':
         elif sys.argv[1] in ["help", "-help", "--help"]:
             if os_clear:
                 os.system("clear")
-            print(YELLOW_COLOR + "To Run Normal:                ./fru_tools.py\n"
-                                 "To View Script Version:       ./fru_tools.py -v\n"
-                                 "To Disable Clear Screen:      ./fru_tools.py -c 0    or   ./fru_tools.py -c off\n"
-                                 "To View This Help Screen:     ./fru_tools.py --help\n" + RESET_STYLE)
+            print(YELLOW_COLOR + "To Run Normal:                ./ONIE_tools.py\n"
+                                 "To View Script Version:       ./ONIE_tools.py -v\n"
+                                 "To View This Help Screen:     ./ONIE_tools.py --help\n" + RESET_STYLE)
             exit()
         else:
             if os_clear:
@@ -1650,10 +1667,9 @@ if __name__ == '__main__':
         elif sys.argv[1] in ["-", "--"] and sys.argv[2].lower() == "help":
             if os_clear:
                 os.system("clear")
-            print(YELLOW_COLOR + "To Run Normal:                ./fru_tools.py\n"
-                                 "To View Script Version:       ./fru_tools.py -v\n"
-                                 "To Disable Clear Screen:      ./fru_tools.py -c 0    or   ./fru_tools.py -c off\n"
-                                 "To View This Help Screen:     ./fru_tools.py --help\n" + RESET_STYLE)
+            print(YELLOW_COLOR + "To Run Normal:                ./ONIE_tool.py\n"
+                                 "To View Script Version:       ./ONIE_tool.py -v\n"
+                                 "To View This Help Screen:     ./ONIE_tool.py --help\n" + RESET_STYLE)
             exit()
     elif len(sys.argv) == 4:
         if sys.argv[1] in ["-", "--"] and sys.argv[2].lower() in "c" and sys.argv[3].lower() in ["off", "0"]:
