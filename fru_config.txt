@@ -3,7 +3,7 @@
 0x23 1234567890
 0x24 00E0ED123456
 #######################################################################################
-#### Leave the 0x25 code devoid of value, the utility add the Host current date and time
+#### Leave the 0x25 code devoid of value, the utility adds the Host current date and time
 0x25  
 #######################################################################################
 0x27 R101
@@ -15,7 +15,7 @@
 0x52 90500-0171-G00
 0x53 0123456789
 #########################################################################
-####-Leave the 0x54 devoid of value the utility calculate the UUID value
+####-Leave the 0x54 devoid of value the utility calculates the UUID value
 0x54
 #########################################################################
 0x55 R101
