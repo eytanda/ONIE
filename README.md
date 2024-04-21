@@ -5,12 +5,12 @@ The fru_config.txt specifies the field and the data to be written to the FRU.
 note:
 1) if the configuration file contains a field without an assigned data value, the utility will prompt the user to input the value.
 2) The tool also offers an option to modify data for a specific field.
-3) If the 0x25 code(DATE)  is devoid of value, the utility add the Host current date and time 
-4) Leave the 0x54 (UUID) devoid of value the utility calculate the UUID value
+3) If the 0x25 code(DATE)  is devoid of value, the utility adds the Host current date and time 
+4) Leave the 0x54 (UUID) devoid of value the utility calculates the UUID value
 5) The utility default FRU memory size is 512. It can be  modified to 256 by adding the line "actual_mem_size 256" to the fru_config.txt file
 
-6) 
-7) Below are the available options:
+
+## Below are the available options:
 
 
 
@@ -25,7 +25,7 @@ note:
 
 Mode =
 
-Example of the fru_config.txt file:
+## Example of the fru_config.txt file:
 
 0x24 00E0ED123456
 #######################################################################################
