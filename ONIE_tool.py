@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.51
+SCRIPT_VERSION = 5.8
 
 
 def check_py_ver():
@@ -128,7 +128,8 @@ NUMBER_OF_MACS = b"\x00\x09"
 ALLOWED_CODES = ["21", "22", "23", "24", "25", "26", "27", "28", "29",
                  "2a", "2b", "2c", "2d", "2e", "2f", "51", "52", "53",
                  "54", "55", "56", "57", "58", "59", "5a", "5b", "5c",
-                 "5d", "5e", "5f", "fd",  "81", "82", "83", "84", "85", "86", "87", "fe"]
+                 "5d", "5e", "5f", "60", "61", "62", "fd",  "81",
+                 "82", "83", "84", "85", "86", "87", "fe"]
 NOT_ALLOWED_CODES = ["00", "ff"]
 CODES_MEANING = {"21": "Product Name: ",
                  "22": "Part Number: ",
@@ -161,6 +162,8 @@ CODES_MEANING = {"21": "Product Name: ",
                  "5e": "chassis manufacture: ",
                  "5f": "chassis serial number: ",
                  "60": "chassis version: ",
+                 "61": "chassis version: ",
+                 "62": "Chassis type: ",
                  "fd": "Vendor Extension: ",
                  "81": "silicom_onie_version: ",
                  "82": "TNB1: ",
@@ -830,6 +833,18 @@ def is_valid_serial_number(serial_number):
     pattern = re.compile(r'^[0-9a-zA-Z]{10}$')
     return bool(pattern.match(str(serial_number)))
 
+def is_valid_chasiss_type(chasiss_type):
+    return bool(re.fullmatch(r"^0x[0-9A-Fa-f]{1,2}$", chasiss_type))
+
+
+def is_valid_wake_up_type(chasiss_type):
+    return bool(re.fullmatch(r"^0x[0-9A-Fa-f]{1,2}$", chasiss_type))
+
+
+def is_valid_number_of_mac(mac_num):
+    pattern = r"^(?!0\d+$)(?:6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{0,4})$"
+    return bool(re.match(pattern, mac_num))
+
 
 def is_valid_TN(tracking_number):
     pattern = re.compile(r'^[0-9a-zA-Z]{13}$')
@@ -941,10 +956,11 @@ def create_dic(file_name="xxx"):
                                 data_ok = True
 
                         if key == '0x2a':
+                            if not is_valid_number_of_mac(str(values[0])):
 
-                            if not 1 <= int(values[0]) <= 65535:
+                            #if not 1 <= int(values[0]) <= 65535:
 
-                                print(RED_COLOR + f"Wrong Version Format in filed {key} , {CODES_MEANING[key[2:]]},"
+                                print(RED_COLOR + f"Wrong Format in filed {key}  {CODES_MEANING[key[2:]]},"
                                                   f" Number must be between 1 and 65535, "
                                                   f"Please try again:\n" + RESET_STYLE)
                                 data_ok = False
@@ -1036,6 +1052,77 @@ def read_config_file(config_file, burn=False):
                                 f" {CODES_MEANING[key[2:]]}, Should be 4 Characters, Please try again:\n" + RESET_STYLE)
                 sys.exit(1)
 
+        if key == '0x58':
+            value = result_dict.get(key)
+            value = (value[0])
+
+            if is_valid_wake_up_type(str(value)):
+                # if 1 <= value <= 65535:
+                # Convert the number to hexadecimal and represent it as a 2-byte number
+
+                value = int(value, 16)
+                print("value2", value)
+                hex_representation = value.to_bytes(1, byteorder='big')
+                # print("hex_representation" , hex_representation)
+
+                # Convert the key to bytes
+                hex_value_key = int(key, 16)
+                binary_value_key = bytes([hex_value_key])
+                # print(binary_value_key)
+
+                # Get the length of the hexadecimal representation
+                hex_len = len(hex_representation)
+                # print(hex_len)
+                # Append the binary key, length, and hexadecimal representation to the fru_data_list
+                fru_data_list.append(binary_value_key + hex_len.to_bytes(1, "big") + hex_representation)
+
+                # Update the length of the code leng byte + new data
+                new_data_len += 2 + len(hex_representation)
+                continue
+
+            else:
+                print(RED_COLOR + f"Wrong Format in filed {key} {CODES_MEANING[key[2:]]},"
+                                  f" Number must be 1 byte HEX format 0x ), "
+                                  f"Please try again:\n" + RESET_STYLE)
+                sys.exit(1)
+
+
+        if key == '0x62':
+            value = result_dict.get(key)
+            value = (value[0])
+
+            if is_valid_chasiss_type(str(value)):
+                # if 1 <= value <= 65535:
+                # Convert the number to hexadecimal and represent it as a 2-byte number
+
+                value =int(value ,16)
+                print("value2" , value)
+                hex_representation = value.to_bytes(1, byteorder='big')
+                #print("hex_representation" , hex_representation)
+
+                # Convert the key to bytes
+                hex_value_key = int(key, 16)
+                binary_value_key = bytes([hex_value_key])
+                #print(binary_value_key)
+
+                # Get the length of the hexadecimal representation
+                hex_len = len(hex_representation)
+                #print(hex_len)
+                # Append the binary key, length, and hexadecimal representation to the fru_data_list
+                fru_data_list.append(binary_value_key + hex_len.to_bytes(1, "big") + hex_representation)
+
+                # Update the length of the code leng byte + new data
+                new_data_len += 2 + len(hex_representation)
+                continue
+
+            else:
+                print(RED_COLOR + f"Wrong Format in filed {key} {CODES_MEANING[key[2:]]},"
+                                  f" Number must be 1 bytes HEX format 0x (x17 for Rackmount and  0x3 for Desktop ), "
+                                  f"Please try again:\n" + RESET_STYLE)
+                sys.exit(1)
+
+
+
         if key == '0x82' or key == '0x86' or key == '0x87' or key == '0x5c':
             if not is_valid_TN(str(result_dict[key][0])):
                 print(RED_COLOR + f"Wrong Tracking number Format in filed {key} ,"
@@ -1053,15 +1140,17 @@ def read_config_file(config_file, burn=False):
         if key == "0x24":
 
             if not is_valid_mac_address(str(result_dict[key][0])):
-                print(RED_COLOR + f"The Config File Include a Wrong MAC Address Format\n" + RESET_STYLE)
-                sys.exit(1)
+               print(RED_COLOR + f"The Config File Include a Wrong MAC Address Format\n" + RESET_STYLE)
+            #   sys.exit(1)
 
         # number of MAC - convert to hex and set it as 2  bytes
         if key == '0x2a':
             value = result_dict.get(key)
-            value = int(value[0])
-            if 1 <= value <= 65535:
+            value = (value[0])
+            if is_valid_number_of_mac(str(value)):
+            #if 1 <= value <= 65535:
                 # Convert the number to hexadecimal and represent it as a 2-byte number
+                value = int(value[0])
                 hex_representation = value.to_bytes(2, byteorder='big')
 
                 # Convert the key to bytes
@@ -1079,7 +1168,9 @@ def read_config_file(config_file, burn=False):
                 continue
 
             else:
-                print("Error: Number must be between 1 and 65535.")
+                print(RED_COLOR + f"Wrong Format in filed {key} {CODES_MEANING[key[2:]]},"
+                                  f" Number must be between 1 and 65535, "
+                                  f"Please try again:\n" + RESET_STYLE)
                 sys.exit(1)
 
         if key == "0x24" or key == "0x54" or key == "0x83" or key == "0x84":
@@ -1391,7 +1482,7 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
         if ok:
             field_data = data[index:index + len_of_current_field_decimal]
             index += len_of_current_field_decimal
-            if code == "24" or code == "54" or code == "83" or code == "84":
+            if code == "24" or code == "54"  or code == "58" or code == "83" or code == "84" or code == "62":
                 if verbose:
                     print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
                     if code == '83':
@@ -1402,6 +1493,9 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
                         recover_dict.update({code: field_data.hex().upper()})
                 else:
                     codes_data.append(field_data.hex().upper())
+
+
+
             elif code == "2a":
                 field_data = field_data.hex().upper()
                 field_data = int(field_data, 16)
@@ -1515,14 +1609,17 @@ def update_data_dict(recovered_dict):
                         data_ok = True
 
                 if selected_key == '0x2a':
-                    if not 1 <= int(new_data) <= 65535:
+                    if not is_valid_number_of_mac(str(new_data)):
+                    #if not 1 <= int(new_data) <= 65535:
                         print(
-                            RED_COLOR + f"Wrong Format in filed {selected_key} , {CODES_MEANING[selected_key[2:]]},"
+                            RED_COLOR + f"Wrong Format in filed {selected_key}  {CODES_MEANING[selected_key[2:]]},"
                                         f" Number must be between 1 and 65535, Please try again:\n" + RESET_STYLE)
                         data_ok = False
                         continue
                     else:
                         data_ok = True
+
+
 
 
 
@@ -1558,7 +1655,10 @@ def update_data_dict(recovered_dict):
             if selected_key == '0x54':
                 print(
                     RED_COLOR + f"UUID is a system-generated field. Kindly choose an alternative code to modify:\n" + RESET_STYLE)
-                burn = False
+                if  burn:
+                    pass
+                else:
+                    burn = False
             else:
                 print(RED_COLOR + "Selected key does not exist in the file. Please try again." + RESET_STYLE)
 
@@ -1623,17 +1723,17 @@ def loop_main():
 if __name__ == '__main__':
     # confirms that the rest of the packages we need are installed and
     # imports the rest of the packages we need
-    import_packages_that_are_not_included_in_python()
+    #import_packages_that_are_not_included_in_python()
     #
     #
     # check that i2c-tools is installed, if not install
-    check_if_package_installed_and_install_if_not("i2c-tools")
+    #check_if_package_installed_and_install_if_not("i2c-tools")
     #
     print()
-    p = subprocess.Popen("i2cdetect -l".split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-    sys.stdout.write("\033[F")
-    sys.stdout.write("\033[K")
+    #p = subprocess.Popen("i2cdetect -l".split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #p.wait()
+    #sys.stdout.write("\033[F")
+    #.stdout.write("\033[K")
     print(RESET_STYLE_BLACK_BG, end="")
     if len(sys.argv) == 1:
         pass

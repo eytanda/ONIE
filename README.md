@@ -8,6 +8,7 @@ note:
 3) If the 0x25 code(DATE)  is devoid of value, the utility adds the Host current date and time 
 4) Leave the 0x54 (UUID) devoid of value the utility calculates the UUID value
 5) The utility default FRU memory size is 512. It can be  modified to 256 by adding the line "actual_mem_size 256" to the fru_config.txt file
+6) support Marbella Production Software Specification version R014
 
 
 ## Below are the available options:
