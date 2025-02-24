@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Constants
-SCRIPT_VERSION = 5.8
+SCRIPT_VERSION = 5.81
 
 
 def check_py_ver():
@@ -162,7 +162,7 @@ CODES_MEANING = {"21": "Product Name: ",
                  "5e": "chassis manufacture: ",
                  "5f": "chassis serial number: ",
                  "60": "chassis version: ",
-                 "61": "chassis version: ",
+                 "61": "chassis asset tag: ",
                  "62": "Chassis type: ",
                  "fd": "Vendor Extension: ",
                  "81": "silicom_onie_version: ",
