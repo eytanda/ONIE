@@ -6,7 +6,7 @@ Update by: Eytan Dagry
 
 
 
-update date 22.02.2024    - ONIE_tool
+update date 07.04.2024    - ONIE_tool
 """
 
 # included in python
@@ -21,10 +21,12 @@ import binascii
 from collections import OrderedDict
 import re
 from datetime import datetime
+import pyudev
+
 
 
 # Constants
-SCRIPT_VERSION = 5.81
+SCRIPT_VERSION = 6.0
 
 
 def check_py_ver():
@@ -295,22 +297,41 @@ def check_if_package_installed_and_install_if_not(name_of_package):
                     print(GREEN_COLOR + "Successfully Installed i2c-tools." + RESET_STYLE_BLACK_BG)
 
 
+
+
+
 def scan_i2c_addresses():
-    """
-    Scans i2c Addresses And Return A List With All Active Addresses
-    :return: list of active i2c addresses
-    :rtype: list (of int)
-    """
-    i2c_addresses = []
-    for address in range(0, 256):
-        try:
-            bus = SMBus(address)
-            i2c_addresses.append(address)
-            bus.close()
-        except Exception as e:  # ignore exceptions as there will be an exception for each i2c address that isn't active
-            # print(e)
-            pass
-    return i2c_addresses
+    """Detect available I2C buses using pyudev."""
+    available_buses = []
+
+    context = pyudev.Context()  # Initialize pyudev context
+    # Iterate through all devices in the 'i2c-dev' subsystem
+    for device in context.list_devices(subsystem='i2c-dev'):
+        # Get the device path and extract bus number (e.g., /dev/i2c-0, /dev/i2c-1)
+        device_path = device.device_node
+        if device_path.startswith('/dev/i2c-'):
+            bus_number = int(device_path.split('-')[1])
+            available_buses.append(bus_number)
+
+    return available_buses
+
+
+# def scan_i2c_addresses():
+#     """
+#     Scans i2c Addresses And Return A List With All Active Addresses
+#     :return: list of active i2c addresses
+#     :rtype: list (of int)
+#     """
+#     i2c_addresses = []
+#     for address in range(0, 256):
+#         try:
+#             bus = SMBus(address)
+#             i2c_addresses.append(address)
+#             bus.close()
+#         except Exception as e:  # ignore exceptions as there will be an exception for each i2c address that isn't active
+#             # print(e)
+#             pass
+#     return i2c_addresses
 
 
 def get_i2c_bus_number_and_enable_access():
