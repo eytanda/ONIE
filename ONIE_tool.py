@@ -22,12 +22,27 @@ from collections import OrderedDict
 import re
 from datetime import datetime
 import pyudev
-
-
+from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.0
+SCRIPT_VERSION = 6.3
+global actual_mem_size
+actual_mem_size = 512
 
+
+def compare_bin_files(file1, file2):
+    buffer_size = 4096  # Read in chunks for large files
+
+    with open(file1, 'rb') as f1, open(file2, 'rb') as f2:
+        while True:
+            b1 = f1.read(buffer_size)
+            b2 = f2.read(buffer_size)
+
+            if b1 != b2:
+                return False  # Files are different
+
+            if not b1:  # End of both files
+                return True  # Files are the same
 
 def check_py_ver():
     command = ["python3", "--version"]
@@ -460,6 +475,8 @@ def output_fru_data_to_bin_file(file_name="take system time", verbose=True, i2c_
         smbus_device_id1, smbus_device_id2 = get_smbus_device_id(1)
     if file_name == "take system time":
         file_name = "fru_" + datetime.now().strftime("%m.%d.%Y__%H_%M_%S")
+    else:
+        file_name = "compare_write" +  datetime.now().strftime("%m.%d.%Y__%H_%M_%S")
 
     # read all the data in the fru
     fru_data = []
@@ -904,7 +921,7 @@ def create_dic(file_name="xxx"):
     :return:
     """
     global actual_mem_size
-    actual_mem_size = 512
+
 
     data_dict = OrderedDict()
 
@@ -1035,7 +1052,7 @@ def read_config_file(config_file, burn=False):
         os.system("clear")
     if config_file.endswith(".bin"):
         file_name = config_file[:-4]
-
+    print("config_file=", config_file)
     result_dict = create_dic(config_file)
     print(GREEN_COLOR + "Building The Bin file ." + RESET_STYLE_BLACK_BG + "\n")
 
@@ -1082,7 +1099,6 @@ def read_config_file(config_file, burn=False):
                 # Convert the number to hexadecimal and represent it as a 2-byte number
 
                 value = int(value, 16)
-                print("value2", value)
                 hex_representation = value.to_bytes(1, byteorder='big')
                 # print("hex_representation" , hex_representation)
 
@@ -1333,6 +1349,27 @@ def ask_what_to_do_and_call_the_right_func():
         with open(file_name, "rb") as file:
             fru_data = file.read()
         write_to_host_fru(fru_data=fru_data)
+        #####
+        print(YELLOW_COLOR + "**************************************************************************" + RESET_STYLE)
+        print(YELLOW_COLOR + "Validate the written data by comparing the FRU with the original binary file" + RESET_STYLE)
+        print(YELLOW_COLOR + "**************************************************************************\n" + RESET_STYLE)
+
+        output_file_name = output_fru_data_to_bin_file(file_name="compare_write")
+        print(GREEN_COLOR + "FRU Data Has Been Dumped To '%s'" % output_file_name, RESET_STYLE_BLACK_BG)
+        print_123(file_name=output_file_name, read_from_fru=False)
+        if compare_bin_files(output_file_name , file_name):
+            print(GREEN_COLOR + "******************************************************" + RESET_STYLE)
+            print(GREEN_COLOR + "FRU programming and comparison completed successfully." + RESET_STYLE)
+            print(GREEN_COLOR + "******************************************************" + RESET_STYLE)
+
+        else:
+            print(RED_COLOR + "*****************************" + RESET_STYLE)
+            print(RED_COLOR + "ERRR - FRU compare was failed" + RESET_STYLE)
+            print(RED_COLOR + "*****************************" + RESET_STYLE)
+
+
+
+
         return True
     elif what_to_do == "5":
         print_fru_file_in_hex()
@@ -1576,6 +1613,8 @@ def backup_config_file(data_dict):
 
     with open(file_path, "w") as file:
         for key, data in data_dict.items():
+            if key in ("0x58", "0x62") and not str(data).startswith("0x"):
+                data = f"0x{data}"
             file.write(f"{key}  {data}\n")
     return file_path
 
