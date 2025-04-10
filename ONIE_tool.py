@@ -95,23 +95,7 @@ def check_if_ubuntu():
 
 
 # not included in python
-def import_packages_that_are_not_included_in_python():
-    """ Checks that all the packages that are not included in python are installed and imports them after """
-    # package name as you would write if you type in cmd/terminal 'pip install package_name'
-    packages_to_install = ["smbus2", "paramiko-expect", "paramiko"]
-    for package in packages_to_install:
-        pip_check_if_package_installed_and_install_if_not(package)
-    # import the packages after verifying that they are installed
-    from smbus2 import SMBus
-    global SMBus
-    # <class 'smbus2.smbus2.SMBus'>
-    # /usr/local/lib/python3.6/site-packages/smbus2/smbus2.py
-    from paramiko_expect import SSHClientInteraction
-    global SSHClientInteraction
-    # import paramiko
-    global paramiko
-    # from paramiko import AuthenticationException
-    global AuthenticationException
+
 
 
 # Colors
@@ -125,21 +109,21 @@ ALL_COLORS = [BLUE_COLOR, PURPLE_COLOR, YELLOW_COLOR, CYAN_COLOR, RED_COLOR, GRE
 RESET_STYLE_BLACK_BG = "\033[0;0;40m"
 RESET_STYLE = "\033[0;0;0m"
 # IP
-BMC_IP = "192.168.0.10"
-IP_HOST = "192.168.0.100"
+#BMC_IP = "192.168.0.10"
+#IP_HOST = "192.168.0.100"
 # FRU
 VENDOR = b"Silicom"
 HEADER_STRING = b"TlvInfo\x00"
 HEADER_VERSION = b"\x01"
-PRODUCT_NAME = b"DU-ICXSP-ES0"
-PART_NUMBER_32 = b"90500-0169-E5"
-PART_NUMBER_16 = b"90500-0169-E6"
-LABEL_REVISION = b"R101"
-MANUFACTURER = b"Silicom"
-COUNTRY_CODE = b"IL"
-SILICOM_ONIE_VERSION = b"R002"
-IANA_CODE_OF_SILICOM = b"\x00\x00\x3d\x4e"
-NUMBER_OF_MACS = b"\x00\x09"
+# PRODUCT_NAME = b"DU-ICXSP-ES0"
+# PART_NUMBER_32 = b"90500-0169-E5"
+# PART_NUMBER_16 = b"90500-0169-E6"
+# LABEL_REVISION = b"R101"
+# MANUFACTURER = b"Silicom"
+# COUNTRY_CODE = b"IL"
+# SILICOM_ONIE_VERSION = b"R002"
+#IANA_CODE_OF_SILICOM = b"\x00\x00\x3d\x4e"
+#NUMBER_OF_MACS = b"\x00\x09"
 #
 
 ALLOWED_CODES = ["21", "22", "23", "24", "25", "26", "27", "28", "29",
@@ -201,119 +185,6 @@ os_clear = True
 
 
 
-def pip_check_if_package_installed_and_install_if_not(name_of_package):
-    """
-    !! for python packages !!
-    checks if name_of_package is installed and if not it installs it
-    :param name_of_package: the name of the package to check if installed
-                            name_of_package needs to be the same as if you would do 'pip install name_of_package'
-    :type name_of_package: str
-    """
-    py_ver = check_py_ver()
-
-    cmd = "python%s -m pip list" % str(py_ver)
-    process = subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    if name_of_package not in output.decode():
-        print(RED_COLOR + "'%s' not installed" % name_of_package + RESET_STYLE_BLACK_BG)
-        print(GREEN_COLOR + "Proceeding To Installing '%s'" % name_of_package + RESET_STYLE_BLACK_BG)
-        ok = False
-        stop_when_zero = 4
-        while not ok and stop_when_zero > 0:
-            # ping google
-            p = subprocess.Popen(["ping", "google.com", "-c4"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            p.wait()
-            if p.poll():
-                print(RED_COLOR + "Please Connect The System To The Internet" + RESET_STYLE_BLACK_BG)
-                input(CYAN_COLOR + "Press Enter When I'm Connected." + RESET_STYLE_BLACK_BG + "\n")
-                print(GREEN_COLOR + "Checking Connection" + RESET_STYLE_BLACK_BG)
-                try:
-                    process = subprocess.Popen(["dhclient", "-r"], stdout=subprocess.PIPE)
-                    process.wait()
-                    time.sleep(2)
-                    process = subprocess.run("dhclient -timeout 15".split(" "), stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, timeout=10)
-                except subprocess.TimeoutExpired:
-                    pass
-            else:
-                print(GREEN_COLOR + "Installing '%s'" % name_of_package + RESET_STYLE_BLACK_BG)
-                cmd = "python%s -m pip install %s" % (py_ver, name_of_package)
-                process = subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE)
-                output, error = process.communicate()
-                if "ERROR: No matching distribution found for %s" % name_of_package in output.decode():
-                    print(RED_COLOR + "The Package '%s' Doesn't Exist." % name_of_package + RESET_STYLE)
-                    exit()
-                elif "Successfully installed" not in output.decode() and \
-                        "Requirement already satisfied" not in output.decode():
-                    print(RED_COLOR + "Failed To Install '%s'." % name_of_package + RESET_STYLE_BLACK_BG)
-                    print(GREEN_COLOR + "Trying Again." + RESET_STYLE_BLACK_BG)
-                    stop_when_zero -= 1
-                else:
-                    ok = True
-                    print(GREEN_COLOR + "Successfully Installed i2c-tools." + RESET_STYLE_BLACK_BG)
-
-
-def check_if_package_installed_and_install_if_not(name_of_package):
-    """
-    !! for linux packages !!
-    checks if name_of_package is installed and if not it installs it
-    :param name_of_package: the name of the package to check if installed
-                            name_of_package needs to be the same as if you would do 'yum install name_of_package'
-    :type name_of_package: str
-    """
-    if check_if_ubuntu():
-        command = 'apt'
-    else:
-        command = 'yum'
-    # process = subprocess.Popen("sudo yum list installed".split(" "), stdout=subprocess.PIPE)
-    # output, error = process.communicate()
-    # if "command not found" in output.decode():
-    process = subprocess.Popen(f"{command} list --installed".split(" "), stdout=subprocess.PIPE)
-    output, error = process.communicate()
-    if name_of_package not in output.decode():
-        print(RED_COLOR + "'%s' not installed" % name_of_package + RESET_STYLE_BLACK_BG)
-        print(GREEN_COLOR + "Proceeding To Installing '%s'" % name_of_package + RESET_STYLE_BLACK_BG)
-        ok = False
-        stop_when_zero = 4
-        while not ok and stop_when_zero > 0:
-            # ping google
-            p = subprocess.Popen(["ping", "google.com", "-c4"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            p.wait()
-            if p.poll():
-                print(RED_COLOR + "Please Connect The System To The Internet" + RESET_STYLE_BLACK_BG)
-                input(CYAN_COLOR + "Press Enter When I'm Connected. " + RESET_STYLE_BLACK_BG + "\n")
-                print(GREEN_COLOR + "Checking Connection" + RESET_STYLE_BLACK_BG)
-                try:
-                    process = subprocess.Popen(["dhclient", "-r"], stdout=subprocess.PIPE)
-                    process.wait()
-                    time.sleep(2)
-                    process = subprocess.run("dhclient -timeout 15".split(" "), stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, timeout=10)
-                except subprocess.TimeoutExpired:
-                    pass
-            else:
-                print(GREEN_COLOR + "Installing '%s'" % name_of_package + RESET_STYLE_BLACK_BG)
-                if command == 'yum':
-                    cmd = "sudo yum install %s -y" % name_of_package
-                else:
-                    cmd = "sudo apt-get install %s -y" % name_of_package
-                process = subprocess.Popen(cmd.split(" "), stdout=subprocess.PIPE)
-                output, error = process.communicate()
-
-                if "No package %s available." % name_of_package in output.decode():
-                    print(RED_COLOR + "The Package '%s' Doesn't Exist." % name_of_package + RESET_STYLE)
-                    exit()
-                elif "Complete!" not in output.decode():
-                    print(RED_COLOR + "Failed To Install '%s'." % name_of_package + RESET_STYLE_BLACK_BG)
-                    print(GREEN_COLOR + "Trying Again." + RESET_STYLE_BLACK_BG)
-                    stop_when_zero -= 1
-                else:
-                    ok = True
-                    print(GREEN_COLOR + "Successfully Installed i2c-tools." + RESET_STYLE_BLACK_BG)
-
-
-
-
 
 def scan_i2c_addresses():
     """Detect available I2C buses using pyudev."""
@@ -331,22 +202,6 @@ def scan_i2c_addresses():
     return available_buses
 
 
-# def scan_i2c_addresses():
-#     """
-#     Scans i2c Addresses And Return A List With All Active Addresses
-#     :return: list of active i2c addresses
-#     :rtype: list (of int)
-#     """
-#     i2c_addresses = []
-#     for address in range(0, 256):
-#         try:
-#             bus = SMBus(address)
-#             i2c_addresses.append(address)
-#             bus.close()
-#         except Exception as e:  # ignore exceptions as there will be an exception for each i2c address that isn't active
-#             # print(e)
-#             pass
-#     return i2c_addresses
 
 
 def get_i2c_bus_number_and_enable_access():
