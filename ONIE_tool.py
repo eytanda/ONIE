@@ -25,7 +25,7 @@ import pyudev
 from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.3
+SCRIPT_VERSION = 6.4
 global actual_mem_size
 actual_mem_size = 512
 
@@ -830,7 +830,7 @@ def create_dic(file_name="xxx"):
                                 data_ok = False
                                 continue
 
-                        if key == '0x23' or key == '0x53' :
+                        if key == '0x23' or key == '0x53' or key == '0x5c' :
                             if not is_valid_serial_number(str(values[0])):
                                 print(RED_COLOR + f"Wrong Serial number Format, "
                                                   f"Should be 10 Digits, Please try again:\n" + RESET_STYLE)
@@ -861,7 +861,7 @@ def create_dic(file_name="xxx"):
                             else:
                                 data_ok = True
 
-                        if key == '0x82' or key == '0x86' or key == '0x87' or key == '0x5c':
+                        if key == '0x82' or key == '0x86' or key == '0x87': # or key == '0x5c':
                             if not is_valid_TN(str(values[0])):
                                 print(RED_COLOR + f"Wrong Tracking number Format in filed {key},"
                                                   f" {CODES_MEANING[key[2:]]},"
@@ -1015,14 +1015,14 @@ def read_config_file(config_file, burn=False):
 
 
 
-        if key == '0x82' or key == '0x86' or key == '0x87' or key == '0x5c':
+        if key == '0x82' or key == '0x86' or key == '0x87': # or key == '0x5c':
             if not is_valid_TN(str(result_dict[key][0])):
                 print(RED_COLOR + f"Wrong Tracking number Format in filed {key} ,"
                                   f" {CODES_MEANING[key[2:]]}, Should be 13 Digits" + RESET_STYLE)
                 sys.exit(1)
 
         # verify Serial number format ####
-        if key == "0x23" or key == '0x53' :
+        if key == "0x23" or key == '0x53' or key == '0x5c':
             if not is_valid_serial_number(str(result_dict[key][0])):
                 print(RED_COLOR + f"The Config File Include a Wrong Serial number Format\n" + RESET_STYLE)
                 sys.exit(1)
@@ -1513,7 +1513,7 @@ def update_data_dict(recovered_dict):
                         data_ok = False
                         continue
 
-                if selected_key == '0x23' or selected_key == '0x53':
+                if selected_key == '0x23' or selected_key == '0x53' or selected_key == '0x5c':
                     if not is_valid_serial_number(str(new_data)):
                         print(
                             RED_COLOR + f"Wrong Serial number Format,"
@@ -1538,7 +1538,7 @@ def update_data_dict(recovered_dict):
 
 
 
-                if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87' or selected_key == '0x5c':
+                if selected_key == '0x82' or selected_key == '0x86' or selected_key == '0x87': # or selected_key == '0x5c':
                     if not is_valid_TN(str(new_data)):
                         print(
                             RED_COLOR + f"Wrong Tracking number Format in filed {selected_key} , "
@@ -1636,19 +1636,7 @@ def loop_main():
 
 
 if __name__ == '__main__':
-    # confirms that the rest of the packages we need are installed and
-    # imports the rest of the packages we need
-    #import_packages_that_are_not_included_in_python()
-    #
-    #
-    # check that i2c-tools is installed, if not install
-    #check_if_package_installed_and_install_if_not("i2c-tools")
-    #
-    print()
-    #p = subprocess.Popen("i2cdetect -l".split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    #p.wait()
-    #sys.stdout.write("\033[F")
-    #.stdout.write("\033[K")
+
     print(RESET_STYLE_BLACK_BG, end="")
     if len(sys.argv) == 1:
         pass
