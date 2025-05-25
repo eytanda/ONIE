@@ -25,7 +25,7 @@ import pyudev
 from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.4
+SCRIPT_VERSION = 6.41
 global actual_mem_size
 actual_mem_size = 512
 
@@ -988,7 +988,7 @@ def read_config_file(config_file, burn=False):
                 # Convert the number to hexadecimal and represent it as a 2-byte number
 
                 value =int(value ,16)
-                print("value2" , value)
+                #print("value2" , value)
                 hex_representation = value.to_bytes(1, byteorder='big')
                 #print("hex_representation" , hex_representation)
 
