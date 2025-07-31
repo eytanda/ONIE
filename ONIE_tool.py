@@ -22,10 +22,10 @@ from collections import OrderedDict
 import re
 from datetime import datetime
 import pyudev
-from smbus2 import SMBus
+#from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.41
+SCRIPT_VERSION = 6.5
 global actual_mem_size
 actual_mem_size = 512
 
@@ -796,7 +796,7 @@ def create_dic(file_name="xxx"):
 
             # Check if there are at least two words (key and at least one value)
             if len(words) >= 2:
-                key = words[0]
+                key = (words[0]).lower()  # convert the key to lowercase
                 values = words[1:]
             else:
                 key = words[0]
