@@ -6,7 +6,7 @@ Update by: Eytan Dagry
 
 
 
-update date 07.04.2024    - ONIE_tool
+update date 03.08.2025    - ONIE_tool
 """
 
 # included in python
@@ -25,7 +25,7 @@ import pyudev
 #from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.5
+SCRIPT_VERSION = 6.51
 global actual_mem_size
 actual_mem_size = 512
 
@@ -1039,10 +1039,9 @@ def read_config_file(config_file, burn=False):
         if key == '0x2a':
             value = result_dict.get(key)
             value = (value[0])
+
             if is_valid_number_of_mac(str(value)):
-            #if 1 <= value <= 65535:
-                # Convert the number to hexadecimal and represent it as a 2-byte number
-                value = int(value[0])
+                value = int(value)
                 hex_representation = value.to_bytes(2, byteorder='big')
 
                 # Convert the key to bytes
