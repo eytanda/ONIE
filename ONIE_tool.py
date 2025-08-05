@@ -25,7 +25,7 @@ import pyudev
 #from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.51
+SCRIPT_VERSION = 6.52
 global actual_mem_size
 actual_mem_size = 512
 
@@ -723,7 +723,7 @@ def is_valid_mac_address(mac_address):
 
 
 def is_valid_serial_number(serial_number):
-    pattern = re.compile(r'^[0-9a-zA-Z]{10}$')
+    pattern = re.compile(r'^[0-9a-zA-Z]{10,}$')     # the SN should be atleast 10 char per   Silicom_FRU_EEPROM_Spec_R005
     return bool(pattern.match(str(serial_number)))
 
 def is_valid_chasiss_type(chasiss_type):
@@ -830,10 +830,10 @@ def create_dic(file_name="xxx"):
                                 data_ok = False
                                 continue
 
-                        if key == '0x23' or key == '0x53' or key == '0x5c' :
+                        if key == '0x23' or key == '0x53' or key == '0x5c' or key == '0x5f' :
                             if not is_valid_serial_number(str(values[0])):
                                 print(RED_COLOR + f"Wrong Serial number Format, "
-                                                  f"Should be 10 Digits, Please try again:\n" + RESET_STYLE)
+                                                  f"Must be at least 10 alphanumeric characters (as per spec R005). Please try again:\n" + RESET_STYLE)
                                 data_ok = False
                                 continue
                             else:
@@ -1022,9 +1022,11 @@ def read_config_file(config_file, burn=False):
                 sys.exit(1)
 
         # verify Serial number format ####
-        if key == "0x23" or key == '0x53' or key == '0x5c':
+        if key == "0x23" or key == '0x53' or key == '0x5c' or key == '0x5f':
             if not is_valid_serial_number(str(result_dict[key][0])):
-                print(RED_COLOR + f"The Config File Include a Wrong Serial number Format\n" + RESET_STYLE)
+                print(RED_COLOR + f"The Config File Include a Wrong Serial number Format"
+                                  f"Must be at least 10 alphanumeric characters (as per spec R005). Please try again\n" + RESET_STYLE)
+
                 sys.exit(1)
 
         # verify MAC address format ####
@@ -1512,11 +1514,11 @@ def update_data_dict(recovered_dict):
                         data_ok = False
                         continue
 
-                if selected_key == '0x23' or selected_key == '0x53' or selected_key == '0x5c':
+                if selected_key == '0x23' or selected_key == '0x53' or selected_key == '0x5c' or selected_key == '0x5f':
                     if not is_valid_serial_number(str(new_data)):
                         print(
                             RED_COLOR + f"Wrong Serial number Format,"
-                                        f" Should be 10 Digits, Please try again:\n" + RESET_STYLE)
+                                        f" Must be at least 10 alphanumeric characters (as per spec R005). Please try again:\n" + RESET_STYLE)
                         data_ok = False
                         continue
                     else:
