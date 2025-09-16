@@ -25,7 +25,7 @@ import pyudev
 from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.6
+SCRIPT_VERSION = 6.7
 global actual_mem_size
 actual_mem_size = 512
 
@@ -727,7 +727,8 @@ def is_valid_serial_number(serial_number):
     return bool(pattern.match(str(serial_number)))
 
 def is_valid_chasiss_type(chasiss_type):
-    return bool(re.fullmatch(r"^0x[0-9A-Fa-f]{1,2}$", chasiss_type))
+    #return bool(re.fullmatch(r"^0x[0-9A-Fa-f]{1,2}$", chasiss_type))
+    return bool(re.fullmatch(r"^[0-9A-Fa-f]{1,2}$", chasiss_type))
 
 
 def is_valid_wake_up_type(chasiss_type):
@@ -979,39 +980,40 @@ def read_config_file(config_file, burn=False):
                 sys.exit(1)
 
 
+
         if key == '0x62':
-            value = result_dict.get(key)
-            value = (value[0])
+             value = result_dict.get(key)
+             value = (value[0])
+    #
+             if is_valid_chasiss_type(str(value)):
+                 # if 1 <= value <= 65535:
+                 # Convert the number to hexadecimal and represent it as a 1-byte number
+        #
+                 value =int(value ,16)
+                 #print("value2" , value)
+                 hex_representation = value.to_bytes(1, byteorder='big')
+                 #print("hex_representation" , hex_representation)
 
-            if is_valid_chasiss_type(str(value)):
-                # if 1 <= value <= 65535:
-                # Convert the number to hexadecimal and represent it as a 2-byte number
+                 # Convert the key to bytes
+                 hex_value_key = int(key, 16)
+                 binary_value_key = bytes([hex_value_key])
+                 #print(binary_value_key)
 
-                value =int(value ,16)
-                #print("value2" , value)
-                hex_representation = value.to_bytes(1, byteorder='big')
-                #print("hex_representation" , hex_representation)
-
-                # Convert the key to bytes
-                hex_value_key = int(key, 16)
-                binary_value_key = bytes([hex_value_key])
-                #print(binary_value_key)
-
-                # Get the length of the hexadecimal representation
-                hex_len = len(hex_representation)
-                #print(hex_len)
-                # Append the binary key, length, and hexadecimal representation to the fru_data_list
-                fru_data_list.append(binary_value_key + hex_len.to_bytes(1, "big") + hex_representation)
-
-                # Update the length of the code leng byte + new data
-                new_data_len += 2 + len(hex_representation)
-                continue
-
-            else:
-                print(RED_COLOR + f"Wrong Format in filed {key} {CODES_MEANING[key[2:]]},"
-                                  f" Number must be 1 bytes HEX format 0x (x17 for Rackmount and  0x3 for Desktop ), "
-                                  f"Please try again:\n" + RESET_STYLE)
-                sys.exit(1)
+                 # Get the length of the hexadecimal representation
+                 hex_len = len(hex_representation)
+        #         #print(hex_len)
+                 # Append the binary key, length, and hexadecimal representation to the fru_data_list
+                 fru_data_list.append(binary_value_key + hex_len.to_bytes(1, "big") + hex_representation)
+        #
+                 # Update the length of the code leng byte + new data
+                 new_data_len += 2 + len(hex_representation)
+                 continue
+    #
+             else:
+                 print(RED_COLOR + f"Wrong Format in filed {key} {CODES_MEANING[key[2:]]},"
+                                   f" Number must be 1 bytes HEX format 0x (x17 for Rackmount and  0x3 for Desktop ), "
+                                   f"Please try again:\n" + RESET_STYLE)
+             sys.exit(1)
 
 
 
@@ -1396,6 +1398,12 @@ def print_123(verbose=True, file_name="onie_eeprom", read_from_fru=True):
         if ok:
             field_data = data[index:index + len_of_current_field_decimal]
             index += len_of_current_field_decimal
+
+
+
+
+
+
             if code == "24" or code == "54"  or code == "58" or code == "83" or code == "84" or code == "62":
                 if verbose:
                     print(field_data.hex().upper() + " " * (32 - len(field_data.hex().upper())) + "|")
