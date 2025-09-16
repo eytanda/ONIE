@@ -22,10 +22,10 @@ from collections import OrderedDict
 import re
 from datetime import datetime
 import pyudev
-#from smbus2 import SMBus
+from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.52
+SCRIPT_VERSION = 6.6
 global actual_mem_size
 actual_mem_size = 512
 
@@ -1239,7 +1239,7 @@ def ask_what_to_do_and_call_the_right_func():
         read_config_file(file_name, True)
         return True
     elif what_to_do == "1":
-        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir="")
+        file_name = print_list_of_bin_or_txt_files_and_ask_user_to_chose(file_type='txt', sub_dir='')
         read_config_file(file_name, False)
         return True
 
