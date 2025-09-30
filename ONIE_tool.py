@@ -25,9 +25,9 @@ import pyudev
 from smbus2 import SMBus
 
 # Constants
-SCRIPT_VERSION = 6.7
+SCRIPT_VERSION = 6.8
 global actual_mem_size
-actual_mem_size = 512
+#actual_mem_size = 512
 
 
 def compare_bin_files(file1, file2):
@@ -516,16 +516,23 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
     global smbus_device_id2
     global i2c_bus_number
     global actual_mem_size
+
+    if len(fru_data) > actual_mem_size:
+        print(RED_COLOR + f"The FRU Data includes {len(fru_data)} bytes while the actual_mem_size is {actual_mem_size}\n"
+                          f"Please fix and try again." + RESET_STYLE)
+        sys.exit(1)
+
     get_i2c_bus_number_and_enable_access()
-    if len(fru_data) <= 256 and actual_mem_size == 256:
-        mem_size_required = 256
+    if len(fru_data) <= 256 and (actual_mem_size == 128 or actual_mem_size == 256) :
+        mem_size_required = actual_mem_size
         smbus_device_id1, smbus_device_id2 = get_smbus_device_id(1)
+
     else:
-        if len(fru_data) > 256 and actual_mem_size == 256:
-            print(RED_COLOR + f"The FRU Data includes more then 256 but the actual_mem_size defined in the fru_config"
-                          f" file is {actual_mem_size}. Please fix and try again." + RESET_STYLE)
-            sys.exit(1)
-        else:
+        # if len(fru_data) > 256 and actual_mem_size == 256:
+        #     print(RED_COLOR + f"The FRU Data includes more then 256 but the actual_mem_size defined in the fru_config"
+        #                   f" file is {actual_mem_size}. Please fix and try again." + RESET_STYLE)
+        #     sys.exit(1)
+        # else:
             mem_size_required = 512
             smbus_device_id1, smbus_device_id2 = get_smbus_device_id(2)
     # open smbus to the i2c_bus_number
@@ -554,7 +561,9 @@ def write_to_host_fru(file_name='non', fru_data='', config_file="non"):
                     if i < 256:
 
                         try:
+                            #print(f"Writing i={i}, data={fru_data[i]} ")
                             bus.write_byte_data(smbus_device_id1, i, fru_data[i])
+
                         except IOError as e:
                             print(RED_COLOR + f"Failed to write to BUS {i2c_bus_number},"
                                               f"I2C device {smbus_device_id1}." + RESET_STYLE)
@@ -1011,7 +1020,7 @@ def read_config_file(config_file, burn=False):
     #
              else:
                  print(RED_COLOR + f"Wrong Format in filed {key} {CODES_MEANING[key[2:]]},"
-                                   f" Number must be 1 bytes HEX format 0x (x17 for Rackmount and  0x3 for Desktop ), "
+                                   f" Number must be 1 bytes HEX format  (0x17 for Rackmount and  0x03 for Desktop ), "
                                    f"Please try again:\n" + RESET_STYLE)
              sys.exit(1)
 
@@ -1151,11 +1160,52 @@ def read_config_file(config_file, burn=False):
         print_123(file_name=file_path, read_from_fru=False)
     return
 
+def ask_actual_mem_size():
+    global actual_mem_size
+    print(CYAN_COLOR + "Script Version: '%s'" % SCRIPT_VERSION + RESET_STYLE_BLACK_BG)
+
+    # Ask the customer for their device choice
+    choice = input("Enter the number for the device you would like to burn:\n"
+                   "1: 512 Byte (MAESTRO CPU FRU)\n"
+                   "2: 256 Byte \n"
+                   "3: 128 Byte (MAESTRO SWITCH FRU)\n"
+                   "Enter your choice (1 or 2 or 3): ")
+
+    # Initialize actual_mem_size
+    actual_mem_size = 0
+
+    # Determine the actual_mem_size based on the choice
+    if choice == '1':
+        actual_mem_size = 512
+        device_name = "CPU FRU"
+    if choice == '2':
+        actual_mem_size = 256
+        device_name = "256 Byte device "
+    elif choice == '3':
+        actual_mem_size = 128
+        device_name = "MAESTRO SWITCH FRU"
+    else:
+        print("Invalid choice. Please run the command again and enter 1 or 2 or 3.")
+        # You might want to exit the script here or use a loop for re-entry
+
+    # Output the result (for demonstration)
+    if actual_mem_size > 0:
+        print("\n")
+        print(GREEN_COLOR + f"You selected: {device_name}" + RESET_STYLE)
+        print(GREEN_COLOR + f"The actual_mem_size has been set to: {actual_mem_size} Byte\n" + RESET_STYLE)
+
+
+
+
 
 def ask_what_to_do_and_call_the_right_func():
     """ asks the user what to do """
     global os_clear
+    global actual_mem_size
     print(CYAN_COLOR + "Script Version: '%s'" % SCRIPT_VERSION + RESET_STYLE_BLACK_BG)
+
+
+
 
     what_to_do = input("1. Create a Bin File Based On fru_config.txt File data\n"
                        "2. Program Fru Based On The Data In the fru_config.txt File \n"
@@ -1598,12 +1648,12 @@ def main():
     try:
 
         time.sleep(0.5)
+        ask_actual_mem_size()
         ok = ask_what_to_do_and_call_the_right_func()
         while not ok:
             if os_clear:
                 os.system("clear")
             time.sleep(0.5)
-
             ok = ask_what_to_do_and_call_the_right_func()
     except Exception as err:
         with open("errors.log", "a") as errors_file:
